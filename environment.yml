@@ -1,0 +1,12 @@
+name: ml4se-project
+channels:
+  - defaults
+dependencies:
+  - pip
+  - python=3.9.*
+  - pip:
+    - pettingzoo
+    - gym
+    - numpy
+
+prefix: /Users/marcelamsler/opt/miniconda3/envs/py310
