@@ -26,7 +26,7 @@ class raw_env(AECEnv):
     }
 
     def __init__(self):
-        self.agents = ["player_1", "player_2"]
+        self.possible_agents = ["player_1", "player_2"]
 
         [1, 2, 3, 4]
         [1, 2, 3, 4]
@@ -38,6 +38,9 @@ class raw_env(AECEnv):
         observation_space = Box(low=1, high=10, shape=(10, 4), dtype=np.int8)
         self._observation_spaces = {agent: observation_space for agent in self.agents}
         self._agent_selector = agent_selector(self.agents)
+        self.agent_name_mapping = dict(
+            zip(self.possible_agents, list(range(len(self.possible_agents))))
+        )
 
     # this cache ensures that same space object is returned for the same agent
     # allows action space seeding to work as expected
@@ -62,6 +65,7 @@ class raw_env(AECEnv):
         Observe should return the observation of the specified agent. This function
         should return a sane observation (though not necessarily the most up to date possible)
         at any time after reset() is called.
+        TODO should return possible actions and the board values of a player
         """
         # observation of one agent is the previous state of the other
         return np.array(self.observations[agent])
@@ -133,18 +137,10 @@ class raw_env(AECEnv):
             # collect reward if it is the last agent to act
             if self._agent_selector.is_last():
 
-                # The dones dictionary must be updated for all players.
-
                 # observe the current state
-                for i in self.agents:
-                    self.observations[i] = self.state[
-                        self.agents[1 - self.agent_name_mapping[i]]
-                    ]
-            else:
-                # necessary so that observe() returns a reasonable observation at all times.
-                self.state[self.agents[1 - self.agent_name_mapping[agent]]] = NONE
-                # no rewards are allocated until both players give an action
-                self._clear_rewards()
+                # TODO set observation state
+                # TODO set rewards for this agent after the action
+
 
             # selects the next agent.
             self.agent_selection = self._agent_selector.next()
