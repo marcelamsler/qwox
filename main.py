@@ -103,54 +103,57 @@ class raw_env(AECEnv):
 
         self._agent_selector.reset()
 
-        def step(self, action):
-            """
-            step(action) takes in an action for the current agent (specified by
-            agent_selection) and needs to update
-            - rewards
-            - _cumulative_rewards (accumulating the rewards)
-            - dones
-            - infos
-            - agent_selection (to the next agent)
-            And any internal state used by observe() or render()
-            """
-            if self.dones[self.agent_selection]:
-                # handles stepping an agent which is already done
-                # accepts a None action for the one agent, and moves the agent_selection to
-                # the next done agent,  or if there are no more done agents, to the next live agent
-                return self._was_done_step(action)
+    def step(self, action):
+        """
+        step(action) takes in an action for the current agent (specified by
+        agent_selection) and needs to update
+        - rewards
+        - _cumulative_rewards (accumulating the rewards)
+        - dones
+        - infos
+        - agent_selection (to the next agent)
+        And any internal state used by observe() or render()
+        """
+        if self.dones[self.agent_selection]:
+            # handles stepping an agent which is already done
+            # accepts a None action for the one agent, and moves the agent_selection to
+            # the next done agent,  or if there are no more done agents, to the next live agent
+            return self._was_done_step(action)
 
-            agent = self.agent_selection
+        agent = self.agent_selection
 
-            # the agent which stepped last had its _cumulative_rewards accounted for
-            # (because it was returned by last()), so the _cumulative_rewards for this
-            # agent should start again at 0
-            self._cumulative_rewards[agent] = 0
+        # the agent which stepped last had its _cumulative_rewards accounted for
+        # (because it was returned by last()), so the _cumulative_rewards for this
+        # agent should start again at 0
+        self._cumulative_rewards[agent] = 0
 
-            # TODO set state on playing board
-            # stores action of current agent
-            self.state[self.agent_selection] = action
+        # TODO set state on playing board
+        # stores action of current agent
+        self.state[self.agent_selection] = action
 
-            self.rewards[self.agent_selection] = _calculate_reward(self.agent_selection)
-            # TODO check when all are done, maybe move to end of step. But check what happens if multiple agents are simultaniously finished with their rows
-            # self.dones = {agent: self.num_moves >= NUM_ITERS for agent in self.agents}
-            # collect reward if it is the last agent to act
-            if self._agent_selector.is_last():
+        self.rewards[self.agent_selection] = _calculate_reward(self.agent_selection)
+        # TODO check when all are done, maybe move to end of step. But check what happens if multiple agents are simultaniously finished with their rows
+        # self.dones = {agent: self.num_moves >= NUM_ITERS for agent in self.agents}
+        # collect reward if it is the last agent to act
+        if self._agent_selector.is_last():
 
-                # observe the current state
-                # TODO set observation state
-                # TODO set rewards for this agent after the action
+            # observe the current state
+            # TODO set observation state
+            # TODO set rewards for this agent after the action
 
 
-            # selects the next agent.
-            self.agent_selection = self._agent_selector.next()
-            # Adds .rewards to ._cumulative_rewards
-            self._accumulate_rewards()
+        # selects the next agent.
+        self.agent_selection = self._agent_selector.next()
+        # Adds .rewards to ._cumulative_rewards
+        self._accumulate_rewards()
 
         def _calculate_reward(agent):
             # TODO calculate reward based on state/observation
             return 1
 
+        def render(self, mode="human"):
+            #TODO render it
+            pass
 
 if __name__ == '__main__':
     env()
