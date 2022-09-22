@@ -1,5 +1,6 @@
-from color import Color
 import random
+
+from src.game_models.color import Color
 
 
 class Dice:

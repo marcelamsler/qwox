@@ -28,10 +28,6 @@ class raw_env(AECEnv):
     def __init__(self):
         self.possible_agents = ["player_1", "player_2"]
 
-        [1, 2, 3, 4]
-        [1, 2, 3, 4]
-        [4, 3, 2, 1]
-        [4, 3, 2, 1]
         action_space = Box(low=1, high=10, shape=(10, 4), dtype=np.int8)
         self._action_spaces = {agent: action_space for agent in self.agents}
 
@@ -137,10 +133,9 @@ class raw_env(AECEnv):
         # collect reward if it is the last agent to act
         if self._agent_selector.is_last():
 
-            # observe the current state
-            # TODO set observation state
-            # TODO set rewards for this agent after the action
-
+        # observe the current state
+        # TODO set observation state
+        # TODO set rewards for this agent after the action
 
         # selects the next agent.
         self.agent_selection = self._agent_selector.next()
@@ -152,8 +147,9 @@ class raw_env(AECEnv):
             return 1
 
         def render(self, mode="human"):
-            #TODO render it
+            # TODO render it
             pass
+
 
 if __name__ == '__main__':
     env()

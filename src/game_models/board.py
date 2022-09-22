@@ -1,6 +1,6 @@
-from color import Color
-from dice import Dice
-from game_card import GameCard
+from src.game_models.color import Color
+from src.game_models.dice import Dice
+from src.game_models.game_card import GameCard
 
 
 class Board:
@@ -17,3 +17,4 @@ class Board:
         for card in self.game_cards:
             if card.passes == 4 or card.more_than_two_rows_closed():
                 return True
+        return False
