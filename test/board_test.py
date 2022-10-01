@@ -2,9 +2,10 @@ import unittest
 
 from src.game_models.board import Board
 
+
 class BoardTest(unittest.TestCase):
 
-    def test_board_creation(self):
+    def test_board_creation_test(self):
         players = ["player1", "player2"]
         board = Board(player_ids=players)
 
