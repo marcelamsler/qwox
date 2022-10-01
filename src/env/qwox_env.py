@@ -10,9 +10,13 @@ from pettingzoo.utils import agent_selector, wrappers
 from pettingzoo.utils.env import AgentID
 
 from game_models.board import Board
+from game_models.game_card import GameCard
 
 
 class QwoxEnv(AECEnv):
+    WHITE_DICE_ACTION = "white_dice_action"
+    COLOR_DICE_ACTION = "color_dice_action"
+
     def state(self) -> np.ndarray:
         return self.get_state_from(self.board)
 
@@ -29,10 +33,12 @@ class QwoxEnv(AECEnv):
     def __init__(self):
         super().__init__()
 
+        self.observations = None
         self.possible_agents: list[AgentID] = [AgentID("player_1"), AgentID("player_2")]
         self.agents = self.possible_agents[:]
 
-        action_space = Box(low=1, high=10, shape=(10, 4), dtype=np.int8)
+        action_space = spaces.Dict({self.WHITE_DICE_ACTION: Box(low=0, high=1, shape=(11, 4), dtype=np.int8),
+                                    self.COLOR_DICE_ACTION: Box(low=0, high=1, shape=(11, 4), dtype=np.int8)})
         self._action_spaces = {agent: action_space for agent in self.agents}
         self.agent_selection = self.agents[0]
         self.rewards: {AgentID: int} = {agent: 0 for agent in self.agents}
@@ -40,8 +46,8 @@ class QwoxEnv(AECEnv):
 
         observation_space = spaces.Dict(
             {
-                "observation": Box(low=1, high=10, shape=(11, 4), dtype=np.int8),
-                "action_mask": Box(low=0, high=1, shape=(10, 4), dtype=np.int8),
+                "observation": Box(low=0, high=1, shape=(11, 4), dtype=np.int8),
+                "action_mask": Box(low=0, high=1, shape=(11, 4), dtype=np.int8),
             }
         )
 
@@ -78,12 +84,10 @@ class QwoxEnv(AECEnv):
         Observe should return the observation of the specified agent. This function
         should return a sane observation (though not necessarily the most up to date possible)
         at any time after reset() is called.
-        TODO should return possible actions and the board values of a player
         """
-        # observation of one agent is the previous state of the other
-        game_card = self.board.game_cards[agent]
+        game_card: GameCard = self.board.game_cards[agent]
 
-        return {"observation": game_card, "action_mask": game_card.get_allowed_actions_mask()}
+        return {"observation": game_card.get_state(), "action_mask": game_card.get_allowed_actions_mask()}
 
     def close(self):
         """
@@ -116,10 +120,6 @@ class QwoxEnv(AECEnv):
         self.current_tosser_index = 0
         self.agent_selection = self.agents[0]
 
-        # TODO
-        # self.observations = {agent: NONE for agent in self.agents}
-        # self.num_moves = 0
-
         self._agent_selector.reset()
 
     @staticmethod
@@ -146,36 +146,41 @@ class QwoxEnv(AECEnv):
             return self._was_done_step(action)
 
         current_agent_id: AgentID = self.agent_selection
-        self.update_tossing_agent()
         is_tossing_agent = self.current_tosser_index == self.agents.index(current_agent_id)
-        starting_points = self.board.game_cards[current_agent_id].points
+        current_game_card: GameCard = self.board.game_cards[current_agent_id]
+        starting_points = current_game_card.points
 
-        # TODO set state on playing board
-        # stores action of current agent
+        # General Action for white dices which anyone can do
+        current_game_card.cross_value_with_action(action[self.WHITE_DICE_ACTION])
 
-        self.rewards[self.agent_selection] = self.board.game_cards[current_agent_id].points
-        # TODO check when all are done, maybe move to end of step. But check what happens if multiple agents are simultaniously finished with their rows
-        # self.dones = {agent: self.num_moves >= NUM_ITERS for agent in self.agents}
+        # Specific Action which can only be done by tossing-agent
+        if is_tossing_agent:
+            current_game_card.cross_value_with_action(action[self.COLOR_DICE_ACTION])
+        elif not is_tossing_agent and np.count_nonzero(action[self.COLOR_DICE_ACTION]) > 0:
+            print("Agent is not tossing but tried to set color-dice action")
+
+        self.rewards[self.agent_selection] = self.board.game_cards[current_agent_id].points - starting_points
+
         # collect reward if it is the last agent to act
         if self._agent_selector.is_last():
-            pass
-        # observe the current state
-        # TODO set observation state
-        # TODO set rewards for this agent after the action
+            self.dones = {agent: self.board.game_is_finished() for agent in self.agents}
 
         # selects the next agent.
         self.agent_selection = self._agent_selector.next()
+        # Check if next agent has to toss the dices and do it before the next agent takes its step, as the dice
+        # state need to be known by the agent that takes a step
+        self.total_finished_step_count += 1
+        self.update_tossing_agent()
+        next_agent_tossing_agent = self.current_tosser_index == self.agents.index(current_agent_id)
+        if next_agent_tossing_agent:
+            self.board.roll_dices()
         # Adds .rewards to ._cumulative_rewards
         self._accumulate_rewards()
-        self.total_finished_step_count += 1
 
-        def _calculate_reward(agent):
-            # TODO calculate reward based on state/observation
-            return 1
 
-        def render(self, mode="human"):
-            # TODO render it
-            pass
+    def render(self, mode="human"):
+        # TODO render it
+        pass
 
     def update_tossing_agent(self) -> None:
         if self.total_finished_step_count % self.num_agents == 0:

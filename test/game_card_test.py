@@ -18,6 +18,27 @@ class GameCardTest(unittest.TestCase):
         expected_state[Color.BLUE.value][10] = 1
         assert_array_equal(card.get_state(), expected_state)
 
+    def test_cross_value_with_action(self):
+        card = GameCard("some_player_id")
+        action = np.zeros(shape=(4, 11), dtype=int8)
+        action[Color.RED.value][2] = 1
+        card.cross_value_with_action(action)
+
+        expected_state = np.zeros(shape=(4, 11), dtype=int8)
+        expected_state[Color.RED.value][2] = 1
+        assert_array_equal(card.get_state(), expected_state)
+
+    def test_cross_value_with_action_with_start_state(self):
+        card = GameCard("some_player_id")
+        action = np.zeros(shape=(4, 11), dtype=int8)
+        card.cross_value_in_line(Color.BLUE, 2)
+        action[Color.YELLOW.value][5] = 1
+        card.cross_value_with_action(action)
+
+        expected_state = np.zeros(shape=(4, 11), dtype=int8)
+        expected_state[Color.YELLOW.value][5] = 1
+        expected_state[Color.BLUE.value][10] = 1
+        assert_array_equal(card.get_state(), expected_state)
 
     def test_valid_actions_at_beginning(self):
         card = GameCard("some_player_id")
