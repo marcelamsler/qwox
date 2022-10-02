@@ -37,21 +37,12 @@ class QwoxEnv(AECEnv):
         self.possible_agents: list[AgentID] = [AgentID("player_1"), AgentID("player_2")]
         self.agents = self.possible_agents[:]
 
-        action_space = spaces.Dict({self.WHITE_DICE_ACTION: Box(low=0, high=1, shape=(11, 4), dtype=np.int8),
-                                    self.COLOR_DICE_ACTION: Box(low=0, high=1, shape=(11, 4), dtype=np.int8)})
-        self._action_spaces = {agent: action_space for agent in self.agents}
+        self._action_spaces = {agent: self.action_space(agent) for agent in self.agents}
         self.agent_selection = self.agents[0]
         self.rewards: {AgentID: int} = {agent: 0 for agent in self.agents}
         self._cumulative_rewards: {AgentID: int} = {agent: 0 for agent in self.agents}
 
-        observation_space = spaces.Dict(
-            {
-                "observation": Box(low=0, high=1, shape=(11, 4), dtype=np.int8),
-                "action_mask": Box(low=0, high=1, shape=(11, 4), dtype=np.int8),
-            }
-        )
-
-        self._observation_spaces = {agent: observation_space for agent in self.agents}
+        self._observation_spaces = {agent: self.observation_space(agent) for agent in self.agents}
         self._agent_selector = agent_selector(self.agents)
         self.agent_name_mapping = dict(
             zip(self.possible_agents, list(range(len(self.possible_agents))))
@@ -66,11 +57,15 @@ class QwoxEnv(AECEnv):
     @functools.lru_cache(maxsize=None)
     def observation_space(self, agent):
         # Gym spaces are defined and documented here: https://gym.openai.com/docs/#spaces
-        return Box(low=1, high=10, shape=(10, 4), dtype=np.int8)
+        return spaces.Dict(
+            {
+                "observation": Box(low=0, high=1, shape=(4, 11), dtype=np.int8),
+                "action_mask": Box(low=0, high=1, shape=(4, 11), dtype=np.int8)
+            })
 
     @functools.lru_cache(maxsize=None)
     def action_space(self, agent):
-        return Box(low=0, high=1, shape=(11, 4), dtype=np.int8)
+        return Box(low=0, high=1, shape=(4, 11), dtype=np.int8)
 
     def render(self, mode="human"):
         """
@@ -145,19 +140,19 @@ class QwoxEnv(AECEnv):
             # the next done agent,  or if there are no more done agents, to the next live agent
             return self._was_done_step(action)
 
+        current_round = QwoxEnv.get_round(self.total_finished_step_count, self.num_agents)
         current_agent_id: AgentID = self.agent_selection
-        is_tossing_agent = self.current_tosser_index == self.agents.index(current_agent_id)
+        is_tossing_agent = self.get_tossing_agent_index(current_round) == self.agents.index(current_agent_id)
+        all_common_actions_done_in_round = self.are_all_common_actions_done_in_round()
+        if all_common_actions_done_in_round and not is_tossing_agent:
+            print("skip agent ", current_agent_id, "with action", action)
+            return
+
         current_game_card: GameCard = self.board.game_cards[current_agent_id]
         starting_points = current_game_card.points
 
-        # General Action for white dices which anyone can do
-        current_game_card.cross_value_with_action(action[self.WHITE_DICE_ACTION])
-
-        # Specific Action which can only be done by tossing-agent
-        if is_tossing_agent:
-            current_game_card.cross_value_with_action(action[self.COLOR_DICE_ACTION])
-        elif not is_tossing_agent and np.count_nonzero(action[self.COLOR_DICE_ACTION]) > 0:
-            print("Agent is not tossing but tried to set color-dice action")
+        # DO ACTION
+        current_game_card.cross_value_with_flattened_action(action)
 
         self.rewards[self.agent_selection] = self.board.game_cards[current_agent_id].points - starting_points
 
@@ -166,21 +161,42 @@ class QwoxEnv(AECEnv):
             self.dones = {agent: self.board.game_is_finished() for agent in self.agents}
 
         # selects the next agent.
+
         self.agent_selection = self._agent_selector.next()
         # Check if next agent has to toss the dices and do it before the next agent takes its step, as the dice
         # state need to be known by the agent that takes a step
         self.total_finished_step_count += 1
-        self.update_tossing_agent()
-        next_agent_tossing_agent = self.current_tosser_index == self.agents.index(current_agent_id)
+        next_agent_tossing_agent = self.get_tossing_agent_index(current_round) == self.agents.index(current_agent_id)
         if next_agent_tossing_agent:
             self.board.roll_dices()
         # Adds .rewards to ._cumulative_rewards
         self._accumulate_rewards()
 
+    def are_all_common_actions_done_in_round(self):
+        steps_in_one_round = self.num_agents + 1
+        actions_done_in_this_round = self.total_finished_step_count % steps_in_one_round
+        all_common_actions_done_in_round = actions_done_in_this_round > steps_in_one_round - 1
+        return all_common_actions_done_in_round
+
+    def get_tossing_agent_index(self, round):
+        return (round - 1) % self.num_agents
 
     def render(self, mode="human"):
         # TODO render it
         pass
+
+    @staticmethod
+    def get_round(total_finished_step_count, agent_count) -> int:
+        # round number always consists of an action of every agent + one action of the tossing agent
+        # and we want to start
+        steps_in_one_round = agent_count + 1
+        # We want to start with round 1 not 0
+        initial_offset = 1
+        if total_finished_step_count < steps_in_one_round:
+            return initial_offset
+        else:
+            offset_because_count_is_after_step = 1
+            return total_finished_step_count // steps_in_one_round + initial_offset
 
     def update_tossing_agent(self) -> None:
         if self.total_finished_step_count % self.num_agents == 0:

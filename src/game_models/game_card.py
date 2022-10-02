@@ -56,3 +56,7 @@ class GameCard:
     @staticmethod
     def is_reversed_line(color: Color) -> bool:
         return color == Color.GREEN or color == Color.BLUE
+
+    def cross_value_with_flattened_action(self, action):
+        index1, index2 = np.unravel_index(action, shape=(4, 11))
+        self._rows[index1, index2] = 1

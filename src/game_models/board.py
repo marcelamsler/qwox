@@ -1,3 +1,4 @@
+import numpy as np
 from pettingzoo.utils.env import AgentID
 
 from src.game_models.color import Color
@@ -16,7 +17,7 @@ class Board:
             dice.roll()
 
     def game_is_finished(self):
-        for card in self.game_cards:
-            if card.passes == 4 or card.more_than_two_rows_closed():
+        for card in self.game_cards.values():
+            if np.count_nonzero(card.passes) == 4 or card.more_than_two_rows_closed():
                 return True
         return False
