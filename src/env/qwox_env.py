@@ -5,6 +5,7 @@ import numpy as np
 from gym import spaces
 
 from gym.spaces import Box
+from numpy import int64
 from pettingzoo import AECEnv
 from pettingzoo.utils import agent_selector, wrappers
 from pettingzoo.utils.env import AgentID
@@ -32,7 +33,7 @@ class QwoxEnv(AECEnv):
 
     def __init__(self):
         super().__init__()
-
+        self.current_round = 1
         self.observations = None
         self.possible_agents: list[AgentID] = [AgentID("player_1"), AgentID("player_2")]
         self.agents = self.possible_agents[:]
@@ -72,9 +73,22 @@ class QwoxEnv(AECEnv):
         Renders the environment. In human mode, it can print to terminal, open
         up a graphical window, or open up some other display that a human can see and understand.
         """
-        # TODO
+        if mode == "human":
+            print("########")
+            print("Dices", self.board.dices)
+            for agent_index, agent in enumerate(self.agents):
+                is_tossing_agent = self.get_tossing_agent_index(self.current_round) == agent_index
+                print("---------------------------------------")
+                print(agent, "round", self.current_round)
+                if is_tossing_agent:
+                    print("Is Tossing Agent")
+                print(self.observe(agent)["observation"][0])
+                print(self.observe(agent)["observation"][1])
+                print(self.observe(agent)["observation"][2])
+                print(self.observe(agent)["observation"][3])
+                print("---------------------------------------")
 
-    def observe(self, agent):
+    def observe(self, agent: AgentID):
         """
         Observe should return the observation of the specified agent. This function
         should return a sane observation (though not necessarily the most up to date possible)
@@ -140,9 +154,9 @@ class QwoxEnv(AECEnv):
             # the next done agent,  or if there are no more done agents, to the next live agent
             return self._was_done_step(action)
 
-        current_round = QwoxEnv.get_round(self.total_finished_step_count, self.num_agents)
+        self.current_round = QwoxEnv.get_round(self.total_finished_step_count, self.num_agents)
         current_agent_id: AgentID = self.agent_selection
-        is_tossing_agent = self.get_tossing_agent_index(current_round) == self.agents.index(current_agent_id)
+        is_tossing_agent = self.get_tossing_agent_index(self.current_round) == self.agents.index(current_agent_id)
         all_common_actions_done_in_round = self.are_all_common_actions_done_in_round()
         if all_common_actions_done_in_round and not is_tossing_agent:
             print("skip agent ", current_agent_id, "with action", action)
@@ -152,7 +166,10 @@ class QwoxEnv(AECEnv):
         starting_points = current_game_card.points
 
         # DO ACTION
-        current_game_card.cross_value_with_flattened_action(action)
+        if isinstance(action, int64):
+            current_game_card.cross_value_with_flattened_action(action)
+        else:
+            current_game_card.cross_value_with_action(action)
 
         self.rewards[self.agent_selection] = self.board.game_cards[current_agent_id].points - starting_points
 
@@ -160,13 +177,14 @@ class QwoxEnv(AECEnv):
         if self._agent_selector.is_last():
             self.dones = {agent: self.board.game_is_finished() for agent in self.agents}
 
+        self.render()
         # selects the next agent.
-
         self.agent_selection = self._agent_selector.next()
         # Check if next agent has to toss the dices and do it before the next agent takes its step, as the dice
         # state need to be known by the agent that takes a step
         self.total_finished_step_count += 1
-        next_agent_tossing_agent = self.get_tossing_agent_index(current_round) == self.agents.index(current_agent_id)
+        next_agent_tossing_agent = self.get_tossing_agent_index(self.current_round) == self.agents.index(
+            current_agent_id)
         if next_agent_tossing_agent:
             self.board.roll_dices()
         # Adds .rewards to ._cumulative_rewards
@@ -181,10 +199,6 @@ class QwoxEnv(AECEnv):
     def get_tossing_agent_index(self, round):
         return (round - 1) % self.num_agents
 
-    def render(self, mode="human"):
-        # TODO render it
-        pass
-
     @staticmethod
     def get_round(total_finished_step_count, agent_count) -> int:
         # round number always consists of an action of every agent + one action of the tossing agent
@@ -197,10 +211,3 @@ class QwoxEnv(AECEnv):
         else:
             offset_because_count_is_after_step = 1
             return total_finished_step_count // steps_in_one_round + initial_offset
-
-    def update_tossing_agent(self) -> None:
-        if self.total_finished_step_count % self.num_agents == 0:
-            if self.current_tosser_index + 1 >= self.num_agents:
-                self.current_tosser_index = 0
-            else:
-                self.current_tosser_index += 1

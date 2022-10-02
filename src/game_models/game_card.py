@@ -58,5 +58,5 @@ class GameCard:
         return color == Color.GREEN or color == Color.BLUE
 
     def cross_value_with_flattened_action(self, action):
-        index1, index2 = np.unravel_index(action, shape=(4, 11))
+        index1, index2 = np.array(np.unravel_index(action, shape=(4, 11)), dtype=np.intp)
         self._rows[index1, index2] = 1

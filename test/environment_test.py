@@ -2,34 +2,21 @@ import unittest
 from pettingzoo.test import api_test
 
 from env.qwox_env import QwoxEnv
+from env.wrapped_quox_env import wrapped_quox_env
 
 
 class MyTestCase(unittest.TestCase):
 
     def test_env(self):
         env = QwoxEnv()
-        api_test(env, num_cycles=10, verbose_progress=False)
+        api_test(env, num_cycles=10, verbose_progress=True)
 
-    def test_tossing_agent_calculation(self):
-        env = QwoxEnv()
-        self.assertEqual(0, env.current_tosser_index)
-        # Simulate one round, where every agent played once
-        env.total_finished_step_count = env.num_agents
-        # Update as done every step
-        env.update_tossing_agent()
-
-        # next round the agent with index one should toss the dices
-        self.assertEqual(1, env.current_tosser_index)
-
-    def test_tossing_agent_calculation_in_env(self):
-        env = QwoxEnv()
-        self.assertEqual(0, env.current_tosser_index)
-        # Simulate one round, where every agent played once
-        for agent in env.agents:
-            env.step([])
-
-        # next round the agent with index one should toss the dices
-        self.assertEqual(1, env.current_tosser_index)
+    # Test does not work, as api_test sends ints as actions instead of
+    # proper array based on action space, which causes IllegalActionWrapper to
+    # exit, as the int is not part of the unflattened action_mask
+    #def test_wrapped_env(self):
+    #    env = wrapped_quox_env()
+    #    api_test(env, num_cycles=20, verbose_progress=True)
 
     def test_get_round(self):
         first_round = QwoxEnv.get_round(total_finished_step_count=4, agent_count=4)
