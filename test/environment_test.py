@@ -19,14 +19,30 @@ class MyTestCase(unittest.TestCase):
     #    api_test(env, num_cycles=20, verbose_progress=True)
 
     def test_get_round(self):
-        first_round = QwoxEnv.get_round(total_finished_step_count=4, agent_count=4)
+        first_round = QwoxEnv.get_round(total_started_step_count=4, agent_count=4)
         self.assertEqual(1, first_round)
 
-        after_last_action_in_round = QwoxEnv.get_round(total_finished_step_count=5, agent_count=4)
-        self.assertEqual(2, after_last_action_in_round)
+        after_last_action_in_round = QwoxEnv.get_round(total_started_step_count=8, agent_count=4)
+        self.assertEqual(1, after_last_action_in_round)
 
-        some_round = QwoxEnv.get_round(total_finished_step_count=13, agent_count=2)
-        self.assertEqual(5, some_round)
+        after_last_action_in_round_with_two_players = QwoxEnv.get_round(total_started_step_count=3, agent_count=2)
+        self.assertEqual(1, after_last_action_in_round_with_two_players)
+
+        some_round = QwoxEnv.get_round(total_started_step_count=6, agent_count=2)
+        self.assertEqual(2, some_round)
+
+        some_round = QwoxEnv.get_round(total_started_step_count=6, agent_count=2)
+        self.assertEqual(2, some_round)
+
+        some_round = QwoxEnv.get_round(total_started_step_count=8, agent_count=2)
+        self.assertEqual(2, some_round)
+
+    def test_is_second_part_of_round(self):
+        after_two_actions = QwoxEnv.is_second_part_of_round(total_started_step_count=3, num_agents=2)
+        self.assertEqual(True, after_two_actions)
+
+        after_one_action_in_second_round = QwoxEnv.is_second_part_of_round(total_started_step_count=5, num_agents=2)
+        self.assertEqual(False, after_one_action_in_second_round)
 
 if __name__ == '__main__':
     unittest.main()

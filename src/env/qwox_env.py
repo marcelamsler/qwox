@@ -50,7 +50,7 @@ class QwoxEnv(AECEnv):
         )
         self.board: Board = Board(self.possible_agents)
         self.dones: {AgentID: bool} = {agent_id: False for agent_id in self.agents}
-        self.total_finished_step_count = 0
+        self.total_started_step_count = 0
         self.current_tosser_index = 0
 
     # this cache ensures that same space object is returned for the same agent
@@ -68,25 +68,26 @@ class QwoxEnv(AECEnv):
     def action_space(self, agent):
         return Box(low=0, high=1, shape=(4, 11), dtype=np.int8)
 
-    def render(self, mode="human"):
+    def render(self, agent_id, agent_index, mode="human"):
         """
         Renders the environment. In human mode, it can print to terminal, open
         up a graphical window, or open up some other display that a human can see and understand.
         """
         if mode == "human":
-            print("########")
+            print("#################################################")
+            print("started steps", self.total_started_step_count)
             print("Dices", self.board.dices)
-            for agent_index, agent in enumerate(self.agents):
-                is_tossing_agent = self.get_tossing_agent_index(self.current_round) == agent_index
-                print("---------------------------------------")
-                print(agent, "round", self.current_round)
-                if is_tossing_agent:
-                    print("Is Tossing Agent")
-                print(self.observe(agent)["observation"][0])
-                print(self.observe(agent)["observation"][1])
-                print(self.observe(agent)["observation"][2])
-                print(self.observe(agent)["observation"][3])
-                print("---------------------------------------")
+            is_tossing_agent = self.get_tossing_agent_index(self.current_round) == agent_index
+            print("---------------------------------------")
+            print(agent_id, "round", self.current_round)
+            if is_tossing_agent:
+                print("Is Tossing Agent")
+            observation = self.observe(agent_id)["observation"]
+            print(observation[0])
+            print(observation[1])
+            print(observation[2])
+            print(observation[3])
+            print("---------------------------------------")
 
     def observe(self, agent: AgentID):
         """
@@ -125,7 +126,7 @@ class QwoxEnv(AECEnv):
         self._cumulative_rewards: {AgentID: int} = {agent: 0 for agent in self.agents}
         self.dones: {AgentID: bool} = {agent_id: False for agent_id in self.agents}
         self.infos = {agent: {} for agent in self.agents}
-        self.total_finished_step_count = 0
+        self.total_started_step_count = 0
         self.current_tosser_index = 0
         self.agent_selection = self.agents[0]
 
@@ -147,19 +148,21 @@ class QwoxEnv(AECEnv):
         - agent_selection (to the next agent)
         And any internal state used by observe() or render()
         """
-
+        self.total_started_step_count += 1
         if self.dones[self.agent_selection]:
             # handles stepping an agent which is already done
             # accepts a None action for the one agent, and moves the agent_selection to
             # the next done agent,  or if there are no more done agents, to the next live agent
             return self._was_done_step(action)
 
-        self.current_round = QwoxEnv.get_round(self.total_finished_step_count, self.num_agents)
+        self.current_round = QwoxEnv.get_round(self.total_started_step_count, self.num_agents)
         current_agent_id: AgentID = self.agent_selection
         is_tossing_agent = self.get_tossing_agent_index(self.current_round) == self.agents.index(current_agent_id)
-        all_common_actions_done_in_round = self.are_all_common_actions_done_in_round()
-        if all_common_actions_done_in_round and not is_tossing_agent:
+        second_part_of_round = QwoxEnv.is_second_part_of_round(self.total_started_step_count, self.num_agents)
+
+        if second_part_of_round and not is_tossing_agent:
             print("skip agent ", current_agent_id, "with action", action)
+            self.agent_selection = self._agent_selector.next()
             return
 
         current_game_card: GameCard = self.board.game_cards[current_agent_id]
@@ -177,12 +180,11 @@ class QwoxEnv(AECEnv):
         if self._agent_selector.is_last():
             self.dones = {agent: self.board.game_is_finished() for agent in self.agents}
 
-        self.render()
+        self.render(current_agent_id, self.agents.index(current_agent_id))
         # selects the next agent.
         self.agent_selection = self._agent_selector.next()
         # Check if next agent has to toss the dices and do it before the next agent takes its step, as the dice
         # state need to be known by the agent that takes a step
-        self.total_finished_step_count += 1
         next_agent_tossing_agent = self.get_tossing_agent_index(self.current_round) == self.agents.index(
             current_agent_id)
         if next_agent_tossing_agent:
@@ -190,24 +192,26 @@ class QwoxEnv(AECEnv):
         # Adds .rewards to ._cumulative_rewards
         self._accumulate_rewards()
 
-    def are_all_common_actions_done_in_round(self):
-        steps_in_one_round = self.num_agents + 1
-        actions_done_in_this_round = self.total_finished_step_count % steps_in_one_round
-        all_common_actions_done_in_round = actions_done_in_this_round > steps_in_one_round - 1
-        return all_common_actions_done_in_round
-
-    def get_tossing_agent_index(self, round):
-        return (round - 1) % self.num_agents
+    def get_tossing_agent_index(self, current_round):
+        return (current_round - 1) % self.num_agents
 
     @staticmethod
-    def get_round(total_finished_step_count, agent_count) -> int:
+    def get_round(total_started_step_count, agent_count) -> int:
         # round number always consists of an action of every agent + one action of the tossing agent
         # and we want to start
-        steps_in_one_round = agent_count + 1
+        steps_in_one_round = agent_count * 2
         # We want to start with round 1 not 0
         initial_offset = 1
-        if total_finished_step_count < steps_in_one_round:
+        if total_started_step_count <= steps_in_one_round:
             return initial_offset
         else:
-            offset_because_count_is_after_step = 1
-            return total_finished_step_count // steps_in_one_round + initial_offset
+            return (total_started_step_count - 1) // steps_in_one_round + initial_offset
+
+    @staticmethod
+    def is_second_part_of_round(total_started_step_count, num_agents):
+        steps_in_one_round = num_agents * 2
+        if total_started_step_count <= steps_in_one_round:
+            return total_started_step_count > num_agents
+        else:
+            steps_in_this_round = total_started_step_count % steps_in_one_round
+            return steps_in_this_round > num_agents
