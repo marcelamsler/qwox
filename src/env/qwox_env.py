@@ -198,7 +198,6 @@ class QwoxEnv(AECEnv):
     @staticmethod
     def get_round(total_started_step_count, agent_count) -> int:
         # round number always consists of an action of every agent + one action of the tossing agent
-        # and we want to start
         steps_in_one_round = agent_count * 2
         # We want to start with round 1 not 0
         initial_offset = 1
