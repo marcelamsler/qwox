@@ -3,7 +3,7 @@ from typing import Dict
 import numpy as np
 from numpy import int8
 import numpy.typing as npt
-
+import numpy.ma as ma
 from game_models.color import Color
 from game_models.dice import Dice
 
@@ -19,18 +19,24 @@ class GameCard:
         """
         :return: np.array with shape (4,11) and 1 everywhere an action is allowed and 0 where its not allowed
         """
-        mask = np.zeros(shape=(4, 11), dtype=int8)
-        for mask_index, mask_row in enumerate(mask):
+        mask_based_on_crossed_numbers = self.get_mask_based_on_crossed_numbers()
+        mask_based_on_dices = self.get_mask_based_on_dices(dices, is_tossing_player, part_of_round)
+
+        return mask_based_on_crossed_numbers & mask_based_on_dices
+
+    def get_mask_based_on_crossed_numbers(self):
+        mask_based_on_crossed_numbers = np.zeros(shape=(4, 11), dtype=int8)
+        for mask_index, mask_row in enumerate(mask_based_on_crossed_numbers):
             row = self._rows[mask_index]
             nonzero_indexes = np.nonzero(row)
             if len(nonzero_indexes[0]):
                 last_crossed_index = nonzero_indexes[0][-1]
-                mask[mask_index][last_crossed_index:] = 1
+                mask_based_on_crossed_numbers[mask_index][last_crossed_index:] = 1
                 # needed because first index is inclusive
-                mask[mask_index][last_crossed_index] = 0
+                mask_based_on_crossed_numbers[mask_index][last_crossed_index] = 0
             else:
-                mask[mask_index] = 1
-        return mask
+                mask_based_on_crossed_numbers[mask_index] = 1
+        return mask_based_on_crossed_numbers
 
     def cross_value_in_line(self, line_color: Color, value: int):
         row: npt.NDArray = self._rows[line_color.value]
@@ -63,3 +69,29 @@ class GameCard:
     def cross_value_with_flattened_action(self, action):
         index1, index2 = np.array(np.unravel_index(action, shape=(4, 11)), dtype=np.intp)
         self._rows[index1, index2] = 1
+
+    @staticmethod
+    def get_mask_based_on_dices(dices, is_tossing_player, part_of_round):
+        mask = np.zeros(shape=(4, 11), dtype=int8)
+        if part_of_round == 1:
+            value = GameCard.get_white_dices_sum(dices)
+            mask[0][value - 2] = 1
+            mask[1][value - 2] = 1
+            mask[2][12 - value] = 1
+            mask[3][12 - value] = 1
+        else:
+            for color in [Color.RED, Color.BLUE. Color.YELLOW, Color.GREEN]:
+                value = GameCard.get_sum_for_color(dices, color)
+                if color.value < 2:
+                    mask[color.value][value - 2] = 1
+                else:
+                    mask[color.value][12 - value] = 1
+        return mask
+
+    @staticmethod
+    def get_white_dices_sum(dices):
+        return np.sum([dice.current_value for dice in dices if dice.color == Color.WHITE])
+
+    @staticmethod
+    def get_sum_for_color(dices, color: Color):
+        return np.sum([dice.current_value for dice in dices if dice.color == Color.WHITE or dice.color == color])

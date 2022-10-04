@@ -44,29 +44,29 @@ class GameCardTest(unittest.TestCase):
 
     def test_valid_actions_with_one_dices_first_part_of_round(self):
         card = GameCard("some_player_id")
-        allowed_actions = card.get_allowed_actions_mask(dices=GameCardTest.get_dices_with_value(),
+        allowed_actions = card.get_allowed_actions_mask(dices=GameCardTest.get_dices_with_value(value=1),
                                                         is_tossing_player=True, part_of_round=1)
 
-        expected_action_mask = np.ones(shape=(4, 11), dtype=int8)
+        expected_action_mask = np.zeros(shape=(4, 11), dtype=int8)
         combined_value_of_white_dices = 2
-        expected_action_mask[0][combined_value_of_white_dices + 2] = 0
-        expected_action_mask[1][combined_value_of_white_dices + 2] = 0
-        expected_action_mask[2][11 - combined_value_of_white_dices] = 0
-        expected_action_mask[3][11 - combined_value_of_white_dices] = 0
+        expected_action_mask[0][combined_value_of_white_dices - 2] = 1
+        expected_action_mask[1][combined_value_of_white_dices - 2] = 1
+        expected_action_mask[2][12 - combined_value_of_white_dices] = 1
+        expected_action_mask[3][12 - combined_value_of_white_dices] = 1
 
         assert_array_equal(allowed_actions, expected_action_mask)
 
     def test_valid_actions_with_one_dices_second_part_of_round(self):
         card = GameCard("some_player_id")
-        allowed_actions = card.get_allowed_actions_mask(dices=GameCardTest.get_dices_with_value(),
+        allowed_actions = card.get_allowed_actions_mask(dices=GameCardTest.get_dices_with_value(value=4),
                                                         is_tossing_player=True, part_of_round=2)
 
-        expected_action_mask = np.ones(shape=(4, 11), dtype=int8)
-        combined_value_of_white_and_one_colored_dice = 1
-        expected_action_mask[0][combined_value_of_white_and_one_colored_dice + 2] = 0
-        expected_action_mask[1][combined_value_of_white_and_one_colored_dice + 2] = 0
-        expected_action_mask[2][11 - combined_value_of_white_and_one_colored_dice] = 0
-        expected_action_mask[3][11 - combined_value_of_white_and_one_colored_dice] = 0
+        expected_action_mask = np.zeros(shape=(4, 11), dtype=int8)
+        combined_value_of_white_and_one_colored_dice = 8
+        expected_action_mask[0][combined_value_of_white_and_one_colored_dice - 2] = 1
+        expected_action_mask[1][combined_value_of_white_and_one_colored_dice - 2] = 1
+        expected_action_mask[2][12 - combined_value_of_white_and_one_colored_dice] = 1
+        expected_action_mask[3][12 - combined_value_of_white_and_one_colored_dice] = 1
 
         assert_array_equal(allowed_actions, expected_action_mask)
 
@@ -85,11 +85,27 @@ class GameCardTest(unittest.TestCase):
 
         expected_action_map = np.zeros(shape=(4, 11), dtype=int8)
         expected_action_map[Color.RED.value][6 - 2] = 1
-        expected_action_map[Color.GREEN.value][11 - 6] = 1
+        expected_action_map[Color.GREEN.value][12 - 6] = 1
+        expected_action_map[Color.BLUE.value][12 - 6] = 1
 
         allowed_actions = card.get_allowed_actions_mask(dices=GameCardTest.get_dices_with_value(3),
                                                         is_tossing_player=False, part_of_round=1)
         assert_array_equal(allowed_actions, expected_action_map)
+
+    def test_mask_for_dices(self):
+        dice_value = 3
+        mask = GameCard.get_mask_based_on_dices(dices=GameCardTest.get_dices_with_value(dice_value),
+                                                is_tossing_player=False,
+                                                part_of_round=1)
+
+        expected_action_map = np.zeros(shape=(4, 11), dtype=int8)
+        value_of_white_dices = dice_value * 2
+        expected_action_map[Color.RED.value][value_of_white_dices - 2] = 1
+        expected_action_map[Color.YELLOW.value][value_of_white_dices - 2] = 1
+        expected_action_map[Color.GREEN.value][12 - value_of_white_dices] = 1
+        expected_action_map[Color.BLUE.value][12 - value_of_white_dices] = 1
+
+        assert_array_equal(mask, expected_action_map)
 
     @staticmethod
     def get_dices_with_value(value: int = 1):
