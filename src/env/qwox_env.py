@@ -97,7 +97,7 @@ class QwoxEnv(AECEnv):
         """
         game_card: GameCard = self.board.game_cards[agent]
 
-        return {"observation": game_card.get_state(), "action_mask": game_card.get_allowed_actions_mask()}
+        return {"observation": game_card.get_state(), "action_mask": game_card.get_allowed_actions_mask(self.board.dices)}
 
     def close(self):
         """

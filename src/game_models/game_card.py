@@ -1,8 +1,11 @@
+from typing import Dict
+
 import numpy as np
 from numpy import int8
 import numpy.typing as npt
 
 from game_models.color import Color
+from game_models.dice import Dice
 
 
 class GameCard:
@@ -12,7 +15,7 @@ class GameCard:
         self._player_id: str = player_id
         self.points: int = 0
 
-    def get_allowed_actions_mask(self):
+    def get_allowed_actions_mask(self, dices: list[Dice], is_tossing_player: bool, part_of_round: int):
         """
         :return: np.array with shape (4,11) and 1 everywhere an action is allowed and 0 where its not allowed
         """

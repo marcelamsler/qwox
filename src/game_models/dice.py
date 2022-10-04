@@ -4,9 +4,9 @@ from src.game_models.color import Color
 
 
 class Dice:
-    def __init__(self, color: Color):
+    def __init__(self, color: Color, current_value: int = random.randint(1, 6)):
         self.color: Color = color
-        self.current_value: int = 1
+        self.current_value: int = current_value
         self.roll()
 
     def roll(self):
