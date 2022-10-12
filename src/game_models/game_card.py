@@ -96,13 +96,12 @@ class GameCard:
     def is_row_closed(self, row_index) -> bool:
         return self._rows[row_index][-1] == 1
 
-    def more_than_two_rows_closed(self) -> bool:
-        closed_rows = 0
+    def get_closed_row_indexes(self):
+        closed_row_indexes: list[int] = []
         for index, row in enumerate(self._rows):
             if self.is_row_closed(index):
-                closed_rows += 1
-
-        return closed_rows >= 2
+                closed_row_indexes.append(index)
+        return closed_row_indexes
 
     def get_state(self):
         return self._rows

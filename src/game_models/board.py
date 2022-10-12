@@ -17,7 +17,15 @@ class Board:
             dice.roll()
 
     def game_is_finished(self):
+        closed_rows: list[int] = []
         for card in self.game_cards.values():
-            if np.count_nonzero(card.passes) == 4 or card.more_than_two_rows_closed():
+            if np.count_nonzero(card.passes) == 4:
                 return True
+            else:
+                closed_rows.extend(card.get_closed_row_indexes())
+
+        closed_rows_without_duplicates = len(list(dict.fromkeys(closed_rows)))
+        if closed_rows_without_duplicates >= 2:
+            return True
+
         return False
