@@ -171,24 +171,32 @@ class QwoxEnv(AECEnv):
 
         if is_second_part_of_round and not is_tossing_agent:
             print("skip agent ", current_agent_id, "with action", action)
+            self.rewards = {agent: 0 for agent in self.agents}
+            self._cumulative_rewards[self.agent_selection] = 0
             self.agent_selection = self._agent_selector.next()
             return
 
         current_game_card: GameCard = self.board.game_cards[current_agent_id]
-        starting_points = current_game_card.points
+        starting_points = current_game_card.get_points()
 
         # DO ACTION
         current_game_card.cross_value_with_flattened_action(action)
 
-        self.rewards[self.agent_selection] = self.board.game_cards[current_agent_id].points - starting_points
+        for agent in self.agents:
+            if agent == current_agent_id:
+                self.rewards[current_agent_id] = current_game_card.get_points() - starting_points
+            else:
+                self.rewards[agent] = 0
 
-        # collect reward if it is the last agent to act
         if self._agent_selector.is_last():
             self.dones = {agent: self.board.game_is_finished() for agent in self.agents}
 
         self.render(current_agent_id, self.agents.index(current_agent_id))
+
+        self._cumulative_rewards[self.agent_selection] = 0
         # selects the next agent.
         self.agent_selection = self._agent_selector.next()
+
         # Check if next agent has to toss the dices and do it before the next agent takes its step, as the dice
         # state need to be known by the agent that takes a step
         next_agent_tossing_agent = self.get_tossing_agent_index(self.current_round) == self.agents.index(

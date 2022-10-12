@@ -160,6 +160,10 @@ class GameCardTest(unittest.TestCase):
 
         assert_array_equal(mask, expected_action_map)
 
+    def test_calculate_points_for_row(self):
+        points = GameCard.calculate_points_for_row(3)
+        self.assertEqual(points, 6)
+
     @staticmethod
     def get_dices_with_value(value: int = 1) -> list[Dice]:
         return [Dice(color, value) for color in

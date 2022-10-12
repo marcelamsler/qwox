@@ -8,7 +8,7 @@ from env.qwox_env import QwoxEnv
 from env.wrapped_quox_env import wrapped_quox_env
 
 
-class MyTestCase(unittest.TestCase):
+class EnvironmentTest(unittest.TestCase):
 
     def test_env(self):
         env = wrapped_quox_env()
@@ -51,8 +51,8 @@ class MyTestCase(unittest.TestCase):
         env = wrapped_quox_env()
         env.reset()
         for agent in env.agent_iter():
-            action = None
             observation, reward, done, info = env.last()
+            print("last reward for this agent", agent, reward, info)
 
             if np.count_nonzero(observation["action_mask"][:44]) > 0:
                 action = random.choice(np.flatnonzero(observation["action_mask"]))

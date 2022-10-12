@@ -1,3 +1,4 @@
+import itertools
 from typing import Dict
 
 import numpy as np
@@ -16,7 +17,34 @@ class GameCard:
         self._rows: npt.NDArray = np.zeros(shape=self.OBSERVATION_SHAPE, dtype=int8)
         self.passes: npt.NDArray = np.zeros(shape=(1, 4), dtype=int8)
         self._player_id: str = player_id
-        self.points: int = 0
+
+    def get_points(self):
+        total_points = 0
+        for row in self._rows:
+            checked_count = np.count_nonzero(row)
+            total_points += self.calculate_points_for_row(checked_count)
+
+        total_points += np.count_nonzero(self.passes) * -5
+
+        return total_points
+
+    @staticmethod
+    def calculate_points_for_row(checked_count: int) -> int:
+        """
+        The game gives points based on checked numbers in a row
+
+        e.g.
+        1 -> 1 Point
+        2 -> 3 Points
+        3 -> 6 Points
+        ...
+        12 -> 78 Points
+
+        This can be calculated by doing 1+2+3, if the user has 3 numbers crossed
+        :param checked_count: int
+        :return: points : int
+        """
+        return sum(range(1, checked_count + 1))
 
     def get_allowed_actions_mask(self, dices: list[Dice], is_tossing_player: bool, is_second_part_of_round: int):
         """
@@ -94,6 +122,7 @@ class GameCard:
         self._rows = self._rows + action_array
 
     def is_row_closed(self, row_index) -> bool:
+        # TODO row can only be closed if 5 other fields are checked in that row
         return self._rows[row_index][-1] == 1
 
     def get_closed_row_indexes(self):
