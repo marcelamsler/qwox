@@ -9,38 +9,57 @@ from game_models.dice import Dice
 
 
 class GameCard:
+    ACTION_MASK_SHAPE = (5, 11)
+    OBSERVATION_SHAPE = (5, 11)
+
     def __init__(self, player_id: str):
-        self._rows: npt.NDArray = np.zeros(shape=(4, 11), dtype=int8)
+        self._rows: npt.NDArray = np.zeros(shape=self.OBSERVATION_SHAPE, dtype=int8)
         self.passes: npt.NDArray = np.zeros(shape=(1, 4), dtype=int8)
         self._player_id: str = player_id
         self.points: int = 0
 
     def get_allowed_actions_mask(self, dices: list[Dice], is_tossing_player: bool, is_second_part_of_round: int):
         """
+        First 44 values are for values on the board, the 44th - 48th are for pass fields and 49th - 55th should do nothing
         :return: np.array with shape (4,11) and 1 everywhere an action is allowed and 0 where its not allowed
+
         """
         mask_based_on_crossed_numbers = self.get_mask_based_on_crossed_numbers()
         mask_based_on_dices = self.get_mask_based_on_dices(dices, is_tossing_player, is_second_part_of_round)
 
-        return mask_based_on_crossed_numbers & mask_based_on_dices
+        combined_mask = mask_based_on_crossed_numbers & mask_based_on_dices
+
+        self.add_pass_numbers_and_none_actions(combined_mask)
+
+        return combined_mask
+
+    def add_pass_numbers_and_none_actions(self, combined_mask):
+        row_index = 4
+        row = self._rows[row_index]
+        for pass_field in range(0, 3):
+            if row[row_index] == 0:
+                combined_mask[row_index][pass_field] = 1
+
+        combined_mask[row_index][3:] = 1
 
     def get_mask_based_on_crossed_numbers(self):
-        mask_based_on_crossed_numbers = np.zeros(shape=(4, 11), dtype=int8)
+        mask_based_on_crossed_numbers = np.zeros(shape=GameCard.ACTION_MASK_SHAPE, dtype=int8)
         for mask_index, mask_row in enumerate(mask_based_on_crossed_numbers):
-            row = self._rows[mask_index]
-            nonzero_indexes = np.nonzero(row)
-            if len(nonzero_indexes[0]):
-                last_crossed_index = nonzero_indexes[0][-1]
-                mask_based_on_crossed_numbers[mask_index][last_crossed_index:] = 1
-                # needed because first index is inclusive
-                mask_based_on_crossed_numbers[mask_index][last_crossed_index] = 0
-            else:
-                mask_based_on_crossed_numbers[mask_index] = 1
+            if mask_index <= 3:
+                row = self._rows[mask_index]
+                nonzero_indexes = np.nonzero(row)
+                if len(nonzero_indexes[0]):
+                    last_crossed_index = nonzero_indexes[0][-1]
+                    mask_based_on_crossed_numbers[mask_index][last_crossed_index:] = 1
+                    # needed because first index is inclusive
+                    mask_based_on_crossed_numbers[mask_index][last_crossed_index] = 0
+                else:
+                    mask_based_on_crossed_numbers[mask_index] = 1
         return mask_based_on_crossed_numbers
 
     @staticmethod
     def get_mask_based_on_dices(dices, is_tossing_player, is_second_part_of_round):
-        mask = np.zeros(shape=(4, 11), dtype=int8)
+        mask = np.zeros(shape=GameCard.ACTION_MASK_SHAPE, dtype=int8)
 
         if is_second_part_of_round:
             if not is_tossing_player:
@@ -80,9 +99,10 @@ class GameCard:
     def more_than_two_rows_closed(self) -> bool:
         closed_rows = 0
         for index, row in enumerate(self._rows):
-            self.is_row_closed(index)
+            if self.is_row_closed(index):
+                closed_rows += 1
 
-        return closed_rows > 2
+        return closed_rows >= 2
 
     def get_state(self):
         return self._rows
@@ -92,9 +112,8 @@ class GameCard:
         return color == Color.GREEN or color == Color.BLUE
 
     def cross_value_with_flattened_action(self, action):
-        index1, index2 = np.array(np.unravel_index(action, shape=(4, 11)), dtype=np.intp)
+        index1, index2 = np.array(np.unravel_index(action, shape=(5, 11)), dtype=np.intp)
         self._rows[index1, index2] = 1
-
 
     @staticmethod
     def get_white_dices_sum(dices):

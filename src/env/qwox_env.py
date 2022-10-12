@@ -4,7 +4,7 @@ from typing import Optional
 import numpy as np
 from gym import spaces
 
-from gym.spaces import Box
+from gym.spaces import Box, Discrete
 from numpy import int64
 from pettingzoo import AECEnv
 from pettingzoo.utils import agent_selector, wrappers
@@ -17,6 +17,8 @@ from game_models.game_card import GameCard
 class QwoxEnv(AECEnv):
     WHITE_DICE_ACTION = "white_dice_action"
     COLOR_DICE_ACTION = "color_dice_action"
+    ACTION_SPACE_SIZE = 55
+    OBSERVATION_SPACE_SHAPE = (5, 11)
 
     def state(self) -> np.ndarray:
         return self.get_state_from(self.board)
@@ -60,13 +62,13 @@ class QwoxEnv(AECEnv):
         # Gym spaces are defined and documented here: https://gym.openai.com/docs/#spaces
         return spaces.Dict(
             {
-                "observation": Box(low=0, high=1, shape=(4, 11), dtype=np.int8),
-                "action_mask": Box(low=0, high=1, shape=(4, 11), dtype=np.int8)
+                "observation": Box(low=0, high=1, shape=self.OBSERVATION_SPACE_SHAPE, dtype=np.int8),
+                "action_mask": Box(low=0, high=1, shape=(self.ACTION_SPACE_SIZE, ), dtype=np.int8)
             })
 
     @functools.lru_cache(maxsize=None)
     def action_space(self, agent):
-        return Box(low=0, high=1, shape=(4, 11), dtype=np.int8)
+        return Discrete(self.ACTION_SPACE_SIZE)
 
     def render(self, agent_id, agent_index, mode="human"):
         """
@@ -82,7 +84,7 @@ class QwoxEnv(AECEnv):
             print(agent_id, "round", self.current_round)
             if is_tossing_agent:
                 print("Is Tossing Agent")
-            observation = self.observe(agent_id)["observation"]
+            observation = self.observe(agent_id)["observation"].reshape(5, 11)
             print(observation[0])
             print(observation[1])
             print(observation[2])
@@ -99,8 +101,9 @@ class QwoxEnv(AECEnv):
         is_tossing_agent = self.get_tossing_agent_index(self.current_round) == self.agents.index(agent)
         is_second_part_of_round = QwoxEnv.is_second_part_of_round(self.total_started_step_count, self.num_agents)
         return {"observation": game_card.get_state(),
-                "action_mask": game_card.get_allowed_actions_mask(self.board.dices, is_tossing_player=is_tossing_agent,
-                                                                  is_second_part_of_round=is_second_part_of_round)}
+                "action_mask": game_card.get_allowed_actions_mask(self.board.dices,
+                                                                  is_tossing_player=is_tossing_agent,
+                                                                  is_second_part_of_round=is_second_part_of_round).flatten()}
 
     def close(self):
         """
@@ -156,12 +159,15 @@ class QwoxEnv(AECEnv):
             # handles stepping an agent which is already done
             # accepts a None action for the one agent, and moves the agent_selection to
             # the next done agent,  or if there are no more done agents, to the next live agent
-            return self._was_done_step(action)
+            return self._was_done_step(None)
 
         self.current_round = QwoxEnv.get_round(self.total_started_step_count, self.num_agents)
         current_agent_id: AgentID = self.agent_selection
         is_tossing_agent = self.get_tossing_agent_index(self.current_round) == self.agents.index(current_agent_id)
         is_second_part_of_round = QwoxEnv.is_second_part_of_round(self.total_started_step_count, self.num_agents)
+
+        if action is None:
+            print("Agent chose no action ", current_agent_id)
 
         if is_second_part_of_round and not is_tossing_agent:
             print("skip agent ", current_agent_id, "with action", action)
@@ -172,10 +178,7 @@ class QwoxEnv(AECEnv):
         starting_points = current_game_card.points
 
         # DO ACTION
-        if isinstance(action, int64):
-            current_game_card.cross_value_with_flattened_action(action)
-        else:
-            current_game_card.cross_value_with_action(action)
+        current_game_card.cross_value_with_flattened_action(action)
 
         self.rewards[self.agent_selection] = self.board.game_cards[current_agent_id].points - starting_points
 

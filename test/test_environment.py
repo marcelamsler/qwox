@@ -1,4 +1,7 @@
+import random
 import unittest
+
+import numpy as np
 from pettingzoo.test import api_test
 
 from env.qwox_env import QwoxEnv
@@ -8,13 +11,13 @@ from env.wrapped_quox_env import wrapped_quox_env
 class MyTestCase(unittest.TestCase):
 
     def test_env(self):
-        env = QwoxEnv()
-        api_test(env, num_cycles=10, verbose_progress=True)
+        env = wrapped_quox_env()
+        api_test(env, num_cycles=11, verbose_progress=True)
 
     # Test does not work, as api_test sends ints as actions instead of
     # proper array based on action space, which causes IllegalActionWrapper to
     # exit, as the int is not part of the unflattened action_mask
-    #def test_wrapped_env(self):
+    # def test_wrapped_env(self):
     #    env = wrapped_quox_env()
     #    api_test(env, num_cycles=20, verbose_progress=True)
 
@@ -43,6 +46,22 @@ class MyTestCase(unittest.TestCase):
 
         after_one_action_in_second_round = QwoxEnv.is_second_part_of_round(total_started_step_count=5, num_agents=2)
         self.assertEqual(False, after_one_action_in_second_round)
+
+    def test_environment_manually(self):
+        env = wrapped_quox_env()
+        env.reset()
+        for agent in env.agent_iter():
+            action = None
+            observation, reward, done, info = env.last()
+
+            if np.count_nonzero(observation["action_mask"][:44]) > 0:
+                action = random.choice(np.flatnonzero(observation["action_mask"]))
+            else:
+                print("Couldn't find possible action, so taking 54")
+                action = 54
+
+            env.step(action)
+
 
 if __name__ == '__main__':
     unittest.main()
