@@ -96,8 +96,11 @@ class QwoxEnv(AECEnv):
         at any time after reset() is called.
         """
         game_card: GameCard = self.board.game_cards[agent]
-
-        return {"observation": game_card.get_state(), "action_mask": game_card.get_allowed_actions_mask(self.board.dices)}
+        is_tossing_agent = self.get_tossing_agent_index(self.current_round) == self.agents.index(agent)
+        is_second_part_of_round = QwoxEnv.is_second_part_of_round(self.total_started_step_count, self.num_agents)
+        return {"observation": game_card.get_state(),
+                "action_mask": game_card.get_allowed_actions_mask(self.board.dices, is_tossing_player=is_tossing_agent,
+                                                                  is_second_part_of_round=is_second_part_of_round)}
 
     def close(self):
         """
@@ -158,9 +161,9 @@ class QwoxEnv(AECEnv):
         self.current_round = QwoxEnv.get_round(self.total_started_step_count, self.num_agents)
         current_agent_id: AgentID = self.agent_selection
         is_tossing_agent = self.get_tossing_agent_index(self.current_round) == self.agents.index(current_agent_id)
-        second_part_of_round = QwoxEnv.is_second_part_of_round(self.total_started_step_count, self.num_agents)
+        is_second_part_of_round = QwoxEnv.is_second_part_of_round(self.total_started_step_count, self.num_agents)
 
-        if second_part_of_round and not is_tossing_agent:
+        if is_second_part_of_round and not is_tossing_agent:
             print("skip agent ", current_agent_id, "with action", action)
             self.agent_selection = self._agent_selector.next()
             return

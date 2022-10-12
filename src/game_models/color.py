@@ -7,3 +7,6 @@ class Color(Enum):
     YELLOW = 1
     GREEN = 2
     BLUE = 3
+
+    def __eq__(self, other):
+        return self.value == other.value
