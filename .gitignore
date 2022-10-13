@@ -144,3 +144,4 @@ dmypy.json
 cython_debug/
 
 !/src/env/
+/src/agents/tianshou/wandb/

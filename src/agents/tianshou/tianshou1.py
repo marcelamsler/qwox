@@ -2,13 +2,16 @@ import os
 from typing import Optional, Tuple
 
 import numpy as np
+import wandb
 import torch
 from tianshou.data import Collector, VectorReplayBuffer
 from tianshou.env import DummyVectorEnv
 from tianshou.env.pettingzoo_env import PettingZooEnv
 from tianshou.policy import BasePolicy, DQNPolicy, MultiAgentPolicyManager, RandomPolicy
 from tianshou.trainer import offpolicy_trainer
+from tianshou.utils import WandbLogger
 from tianshou.utils.net.common import Net
+from torch.utils.tensorboard import SummaryWriter
 
 from env.wrapped_quox_env import wrapped_quox_env
 
@@ -54,6 +57,7 @@ def _get_env():
 
 
 if __name__ == "__main__":
+
     # ======== Step 1: Environment setup =========
     train_envs = DummyVectorEnv([_get_env for _ in range(10)])
     test_envs = DummyVectorEnv([_get_env for _ in range(10)])
@@ -79,6 +83,10 @@ if __name__ == "__main__":
     # policy.set_eps(1)
     train_collector.collect(n_step=64 * 10)  # batch size * training_num
 
+    log_path = os.path.join("log", "summary.log")
+    logger = WandbLogger(project="Tianshou1")
+    logger.load(SummaryWriter(log_path))
+
 
     # ======== Step 4: Callback functions setup =========
     def save_best_fn(policy):
@@ -88,7 +96,7 @@ if __name__ == "__main__":
 
 
     def stop_fn(mean_rewards):
-        return mean_rewards >= 0.6
+        return mean_rewards >= 70
 
 
     def train_fn(epoch, env_step):
@@ -103,15 +111,18 @@ if __name__ == "__main__":
         return rews[:, 1]
 
 
+    logger = WandbLogger()
+    logger.load(SummaryWriter(log_path))
+
     # ======== Step 5: Run the trainer =========
     result = offpolicy_trainer(
         policy=policy,
         train_collector=train_collector,
         test_collector=test_collector,
-        max_epoch=50,
+        max_epoch=200,
         step_per_epoch=1000,
-        step_per_collect=50,
-        episode_per_test=10,
+        step_per_collect=200,
+        episode_per_test=20,
         batch_size=64,
         train_fn=train_fn,
         test_fn=test_fn,
@@ -120,7 +131,9 @@ if __name__ == "__main__":
         update_per_step=0.1,
         test_in_train=False,
         reward_metric=reward_metric,
+        logger=logger
     )
+
 
     # return result, policy.policies[agents[1]]
     print(f"\n==========Result==========\n{result}")

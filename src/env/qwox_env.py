@@ -1,6 +1,6 @@
 import functools
 from typing import Optional
-
+import logging
 import numpy as np
 from gym import spaces
 from gym.spaces import Box, Discrete
@@ -68,7 +68,11 @@ class QwoxEnv(AECEnv):
     def action_space(self, agent):
         return Discrete(self.ACTION_SPACE_SIZE)
 
-    def render(self, agent_id, agent_index, mode="human"):
+    def render(self, mode: str = "human"):
+        for agent in self.agents:
+            self.render_for_one_agent(agent)
+
+    def render_for_one_agent(self, agent_id, mode="human", action="unknown"):
         """
         Renders the environment. In human mode, it can print to terminal, open
         up a graphical window, or open up some other display that a human can see and understand.
@@ -77,11 +81,13 @@ class QwoxEnv(AECEnv):
             print("#################################################")
             print("started steps", self.total_started_step_count)
             print("Dices", self.board.dices)
-            is_tossing_agent = self.get_tossing_agent_index(self.current_round) == agent_index
+            is_tossing_agent = self.get_tossing_agent_index(self.current_round) == self.agents.index(agent_id)
             print("---------------------------------------")
-            print(agent_id, "round", self.current_round)
-            if is_tossing_agent:
-                print("Is Tossing Agent")
+            part_of_round = 2 if self.is_second_part_of_round(self.total_started_step_count, self.num_agents) else 1
+            print(agent_id, "| Round", self.current_round,
+                  "part", part_of_round,
+                  "| Tossing Agent: ",
+                  is_tossing_agent, "| Reward", self.rewards[agent_id], "| Action: ", action)
             observation = self.observe(agent_id)["observation"].reshape(5, 11)
             print(observation[0])
             print(observation[1])
@@ -168,7 +174,7 @@ class QwoxEnv(AECEnv):
             print("Agent chose no action ", current_agent_id)
 
         if is_second_part_of_round and not is_tossing_agent:
-            print("skip agent ", current_agent_id, "with action", action)
+            logging.debug("skip agent ", current_agent_id, "with action", action)
             self.rewards = {agent: 0 for agent in self.agents}
             self._cumulative_rewards[self.agent_selection] = 0
             self.agent_selection = self._agent_selector.next()
@@ -189,7 +195,8 @@ class QwoxEnv(AECEnv):
         if self._agent_selector.is_last():
             self.dones = {agent: self.board.game_is_finished() for agent in self.agents}
 
-        self.render(current_agent_id, self.agents.index(current_agent_id))
+        if self.total_started_step_count % 1000 < 10:
+            self.render_for_one_agent(current_agent_id, action=action)
 
         self._cumulative_rewards[self.agent_selection] = 0
         # selects the next agent.

@@ -1,4 +1,4 @@
-name: ml4se-project
+name: ml4se
 channels:
   - defaults
 dependencies:
@@ -9,5 +9,6 @@ dependencies:
     - gym==0.25.2
     - numpy==1.23.4
     - tianshou==0.4.9
+    - wandb==0.13.4
 
 prefix: /Users/marcelamsler/opt/miniconda3/envs/py310
