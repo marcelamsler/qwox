@@ -1,6 +1,6 @@
 
 # IntelliJ project files
-.idea
+.idea/
 *.iml
 out
 gen
@@ -145,3 +145,4 @@ dmypy.json
 cython_debug/
 
 !/.idea/
+/.idea/
