@@ -121,7 +121,7 @@ if __name__ == "__main__":
         test_collector=test_collector,
         max_epoch=200,
         step_per_epoch=1000,
-        step_per_collect=200,
+        step_per_collect=50,
         episode_per_test=20,
         batch_size=64,
         train_fn=train_fn,

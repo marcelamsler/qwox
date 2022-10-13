@@ -160,6 +160,23 @@ class GameCardTest(unittest.TestCase):
 
         assert_array_equal(mask, expected_action_map)
 
+    def test_get_points_for_passed_field(self):
+        card = GameCard("some_player_id")
+        card.cross_value_with_flattened_action(44)
+        self.assertEqual(-5, card.get_points())
+
+    def test_get_points_for_blank_field(self):
+        card = GameCard("some_player_id")
+        card.cross_value_with_flattened_action(54)
+        card.cross_value_with_flattened_action(53)
+        self.assertEqual(0, card.get_points())
+
+    def test_get_points_for_valid_field(self):
+        card = GameCard("some_player_id")
+        card.cross_value_with_flattened_action(0)
+        card.cross_value_with_flattened_action(1)
+        self.assertEqual(3, card.get_points())
+
     def test_calculate_points_for_row(self):
         points = GameCard.calculate_points_for_row(3)
         self.assertEqual(points, 6)

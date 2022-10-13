@@ -20,11 +20,12 @@ class GameCard:
 
     def get_points(self):
         total_points = 0
-        for row in self._rows:
+        for row in self._rows[:4]:
             checked_count = np.count_nonzero(row)
             total_points += self.calculate_points_for_row(checked_count)
 
-        total_points += np.count_nonzero(self.passes) * -5
+        passes = self._rows[4][0:4]
+        total_points += np.count_nonzero(passes) * -5
 
         return total_points
 
