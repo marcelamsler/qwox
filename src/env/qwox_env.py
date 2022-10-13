@@ -51,7 +51,8 @@ class QwoxEnv(AECEnv):
             zip(self.possible_agents, list(range(len(self.possible_agents))))
         )
         self.board: Board = Board(self.possible_agents)
-        self.dones: {AgentID: bool} = {agent_id: False for agent_id in self.agents}
+        self.terminations: {AgentID: bool} = {agent_id: False for agent_id in self.agents}
+        self.truncations: {AgentID: bool} = {agent_id: False for agent_id in self.agents}
         self.total_started_step_count = 0
         self.current_tosser_index = 0
 
@@ -63,7 +64,7 @@ class QwoxEnv(AECEnv):
         return spaces.Dict(
             {
                 "observation": Box(low=0, high=1, shape=self.OBSERVATION_SPACE_SHAPE, dtype=np.int8),
-                "action_mask": Box(low=0, high=1, shape=(self.ACTION_SPACE_SIZE, ), dtype=np.int8)
+                "action_mask": Box(low=0, high=1, shape=(self.ACTION_SPACE_SIZE,), dtype=np.int8)
             })
 
     @functools.lru_cache(maxsize=None)
@@ -119,7 +120,8 @@ class QwoxEnv(AECEnv):
         - agents
         - rewards
         - _cumulative_rewards
-        - dones
+        - terminations
+        - truncations
         - infos
         - agent_selection
         And must set up the environment so that render(), step(), and observe()
@@ -130,7 +132,8 @@ class QwoxEnv(AECEnv):
         self.board = Board(player_ids=self.possible_agents)
         self.rewards: {AgentID: int} = {agent: 0 for agent in self.agents}
         self._cumulative_rewards: {AgentID: int} = {agent: 0 for agent in self.agents}
-        self.dones: {AgentID: bool} = {agent_id: False for agent_id in self.agents}
+        self.terminations: {AgentID: bool} = {agent_id: False for agent_id in self.agents}
+        self.truncations: {AgentID: bool} = {agent_id: False for agent_id in self.agents}
         self.infos = {agent: {} for agent in self.agents}
         self.total_started_step_count = 0
         self.current_tosser_index = 0
@@ -149,17 +152,20 @@ class QwoxEnv(AECEnv):
         agent_selection) and needs to update
         - rewards
         - _cumulative_rewards (accumulating the rewards)
-        - dones
+        - terminations
+        - truncations
         - infos
         - agent_selection (to the next agent)
         And any internal state used by observe() or render()
         """
         self.total_started_step_count += 1
-        if self.dones[self.agent_selection]:
+
+        if self.terminations[self.agent_selection] or self.truncations[self.agent_selection]:
             # handles stepping an agent which is already done
             # accepts a None action for the one agent, and moves the agent_selection to
             # the next done agent,  or if there are no more done agents, to the next live agent
-            return self._was_done_step(None)
+            self._was_dead_step(None)
+            return
 
         self.current_round = QwoxEnv.get_round(self.total_started_step_count, self.num_agents)
         current_agent_id: AgentID = self.agent_selection
@@ -189,7 +195,7 @@ class QwoxEnv(AECEnv):
                 self.rewards[agent] = 0
 
         if self._agent_selector.is_last():
-            self.dones = {agent: self.board.game_is_finished() for agent in self.agents}
+            self.terminations = {agent: self.board.game_is_finished() for agent in self.agents}
 
         self.render(current_agent_id, self.agents.index(current_agent_id))
 

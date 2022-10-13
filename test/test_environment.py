@@ -51,8 +51,8 @@ class EnvironmentTest(unittest.TestCase):
         env = wrapped_quox_env()
         env.reset()
         for agent in env.agent_iter():
-            observation, reward, done, info = env.last()
-            print("last reward for this agent", agent, reward, info)
+            observation, reward, termination, truncation, info = env.last()
+            print("last reward for this agent", agent, reward)
 
             if np.count_nonzero(observation["action_mask"][:44]) > 0:
                 action = random.choice(np.flatnonzero(observation["action_mask"]))
