@@ -1,6 +1,6 @@
 
 # IntelliJ project files
-.idea/
+.idea
 *.iml
 out
 gen
@@ -114,7 +114,6 @@ celerybeat.pid
 # Environments
 .env
 .venv
-env/
 venv/
 ENV/
 env.bak/
@@ -144,5 +143,4 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-!/.idea/
-/.idea/
+!/src/env/
