@@ -15,7 +15,7 @@ class GameCard:
 
     def __init__(self, player_id: str):
         self._rows: npt.NDArray = np.zeros(shape=self.OBSERVATION_SHAPE, dtype=int8)
-        self.passes: npt.NDArray = np.zeros(shape=(1, 4), dtype=int8)
+        self.crossed_something_in_current_round = False
         self._player_id: str = player_id
 
     def get_points(self):
@@ -58,18 +58,19 @@ class GameCard:
 
         combined_mask = mask_based_on_crossed_numbers & mask_based_on_dices
 
-        self.add_pass_numbers_and_none_actions(combined_mask)
+        self.add_pass_numbers_and_none_actions(combined_mask, is_second_part_of_round)
 
         return combined_mask
 
-    def add_pass_numbers_and_none_actions(self, combined_mask):
+    def add_pass_numbers_and_none_actions(self, combined_mask, is_second_part_of_round):
         row_index = 4
         row = self._rows[row_index]
-        for pass_field in range(0, 3):
-            if row[row_index] == 0:
+        for pass_field in range(0, 4):
+            if row[pass_field] == 0:
                 combined_mask[row_index][pass_field] = 1
 
-        combined_mask[row_index][3:] = 1
+        if self.crossed_something_in_current_round and is_second_part_of_round:
+            combined_mask[row_index][3:] = 1
 
     def get_mask_based_on_crossed_numbers(self):
         mask_based_on_crossed_numbers = np.zeros(shape=GameCard.ACTION_MASK_SHAPE, dtype=int8)
@@ -118,9 +119,17 @@ class GameCard:
         else:
             row[value - 2] = 1
 
+        self.crossed_something_in_current_round = True
+
     def cross_value_with_action(self, action_array):
         assert np.count_nonzero(action_array) <= 1
         self._rows = self._rows + action_array
+        self.crossed_something_in_current_round = True
+
+    def cross_value_with_flattened_action(self, action):
+        index1, index2 = np.array(np.unravel_index(action, shape=(5, 11)), dtype=np.intp)
+        self._rows[index1, index2] = 1
+        self.crossed_something_in_current_round = True
 
     def is_row_closed(self, row_index) -> bool:
         # TODO row can only be closed if 5 other fields are checked in that row
@@ -139,10 +148,6 @@ class GameCard:
     @staticmethod
     def is_reversed_line(color: Color) -> bool:
         return color == Color.GREEN or color == Color.BLUE
-
-    def cross_value_with_flattened_action(self, action):
-        index1, index2 = np.array(np.unravel_index(action, shape=(5, 11)), dtype=np.intp)
-        self._rows[index1, index2] = 1
 
     @staticmethod
     def get_white_dices_sum(dices):

@@ -160,6 +160,25 @@ class GameCardTest(unittest.TestCase):
 
         assert_array_equal(mask, expected_action_map)
 
+    def test_mask_for_passes(self):
+        card = GameCard("some_player_id")
+        card.cross_value_with_flattened_action(44) # add one pass
+        card.crossed_something_in_current_round = False
+        allowed_actions = card.get_allowed_actions_mask(dices=GameCardTest.get_dices_with_value(value=4),
+                                                        is_tossing_player=True, is_second_part_of_round=True)
+
+        expected_action_mask = np.zeros(shape=GameCard.ACTION_MASK_SHAPE, dtype=int8)
+        combined_value_of_white_and_one_colored_dice = 8
+        expected_action_mask[0][combined_value_of_white_and_one_colored_dice - 2] = 1
+        expected_action_mask[1][combined_value_of_white_and_one_colored_dice - 2] = 1
+        expected_action_mask[2][12 - combined_value_of_white_and_one_colored_dice] = 1
+        expected_action_mask[3][12 - combined_value_of_white_and_one_colored_dice] = 1
+
+        expected_action_mask[4][1:4] = 1
+        expected_action_mask[4][4:10] = 0
+
+        assert_array_equal(allowed_actions, expected_action_mask)
+
     def test_get_points_for_passed_field(self):
         card = GameCard("some_player_id")
         card.cross_value_with_flattened_action(44)

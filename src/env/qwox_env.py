@@ -1,6 +1,7 @@
 import functools
-from typing import Optional
 import logging
+from typing import Optional
+
 import numpy as np
 from gym import spaces
 from gym.spaces import Box, Discrete
@@ -195,8 +196,12 @@ class QwoxEnv(AECEnv):
         if self._agent_selector.is_last():
             self.dones = {agent: self.board.game_is_finished() for agent in self.agents}
 
-        if self.total_started_step_count % 1000 < 10:
+        if 80 < (self.total_started_step_count % 1000) < 90:
             self.render_for_one_agent(current_agent_id, action=action)
+
+        # Reset for next round
+        if is_second_part_of_round:
+            current_game_card.crossed_something_in_current_round = False
 
         self._cumulative_rewards[self.agent_selection] = 0
         # selects the next agent.
