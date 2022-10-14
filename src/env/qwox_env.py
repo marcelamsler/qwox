@@ -17,10 +17,10 @@ class QwoxEnv(AECEnv):
     WHITE_DICE_ACTION = "white_dice_action"
     COLOR_DICE_ACTION = "color_dice_action"
     ACTION_SPACE_SIZE = 55
-    OBSERVATION_SPACE_SHAPE = (5, 11)
 
     def state(self) -> np.ndarray:
-        return self.get_state_from(self.board)
+        # Not needed as long as I don't use training methods as described in super
+        return np.array([])
 
     def seed(self, seed: Optional[int] = None) -> int:
         return 42
@@ -61,7 +61,7 @@ class QwoxEnv(AECEnv):
         # Gym spaces are defined and documented here: https://gym.openai.com/docs/#spaces
         return spaces.Dict(
             {
-                "observation": Box(low=0, high=1, shape=self.OBSERVATION_SPACE_SHAPE, dtype=np.int8),
+                "observation": Box(low=0, high=1, shape=GameCard.OBSERVATION_SHAPE, dtype=np.int8),
                 "action_mask": Box(low=0, high=1, shape=(self.ACTION_SPACE_SIZE,), dtype=np.int8)
             })
 
@@ -89,7 +89,7 @@ class QwoxEnv(AECEnv):
                   "part", part_of_round,
                   "| Tossing Agent: ",
                   is_tossing_agent, "| Reward", self.rewards[agent_id], "| Action: ", action)
-            observation = self.observe(agent_id)["observation"].reshape(5, 11)
+            observation = self.observe(agent_id)["observation"].reshape(5, 12)
             print(observation[0])
             print(observation[1])
             print(observation[2])
@@ -142,11 +142,6 @@ class QwoxEnv(AECEnv):
         self.agent_selection = self.agents[0]
 
         self._agent_selector.reset()
-
-    @staticmethod
-    def get_state_from(board: Board) -> np.ndarray:
-        # Todo flatten State
-        return []
 
     def step(self, action):
         """

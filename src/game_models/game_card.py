@@ -8,7 +8,7 @@ from game_models.dice import Dice
 
 class GameCard:
     ACTION_MASK_SHAPE = (5, 11)
-    OBSERVATION_SHAPE = (5, 11)
+    OBSERVATION_SHAPE = (5, 12)
 
     def __init__(self, player_id: str):
         self._rows: npt.NDArray = np.zeros(shape=self.OBSERVATION_SHAPE, dtype=int8)
@@ -80,9 +80,7 @@ class GameCard:
                 nonzero_indexes = np.nonzero(row)
                 if len(nonzero_indexes[0]):
                     last_crossed_index = nonzero_indexes[0][-1]
-                    mask_based_on_crossed_numbers[mask_index][last_crossed_index:] = 1
-                    # needed because first index is inclusive
-                    mask_based_on_crossed_numbers[mask_index][last_crossed_index] = 0
+                    mask_based_on_crossed_numbers[mask_index][last_crossed_index + 1:] = 1
                 else:
                     mask_based_on_crossed_numbers[mask_index] = 1
         return mask_based_on_crossed_numbers
@@ -121,18 +119,22 @@ class GameCard:
 
         self.crossed_something_in_current_round = True
 
-    def cross_value_with_action(self, action_array):
-        assert np.count_nonzero(action_array) <= 1
-        self._rows = self._rows + action_array
+    def cross_value_with_flattened_action(self, action):
+        row_index, column_index = np.array(np.unravel_index(action, shape=(5, 11)), dtype=np.intp)
+        self._rows[row_index, column_index] = 1
+        self.close_row_if_possible(row_index, column_index)
         self.crossed_something_in_current_round = True
 
-    def cross_value_with_flattened_action(self, action):
-        index1, index2 = np.array(np.unravel_index(action, shape=(5, 11)), dtype=np.intp)
-        self._rows[index1, index2] = 1
-        self.crossed_something_in_current_round = True
+    def close_row_if_possible(self, row_index, column_index):
+        last_crossable_index_in_row = 10
+        if column_index == last_crossable_index_in_row:
+            self._rows[row_index, column_index + 1] = 1
 
     def is_row_closed(self, row_index) -> bool:
         # TODO row can only be closed if 5 other fields are checked in that row
+        # TODO row closing will give additional points to closing agent
+        # TODO row will then be closed for all others
+        # TODO Dice will not be there anymore (needed?)
         return self._rows[row_index][-1] == 1
 
     def get_closed_row_indexes(self):

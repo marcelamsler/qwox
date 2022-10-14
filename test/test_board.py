@@ -1,5 +1,6 @@
 import unittest
 
+from game_models.game_card import GameCard
 from src.game_models.board import Board
 
 
@@ -16,16 +17,32 @@ class BoardTest(unittest.TestCase):
         players = ["player1", "player2"]
         board = Board(player_ids=players)
 
-        board.game_cards[players[0]]._rows[0][10] = 1
-        board.game_cards[players[0]]._rows[1][10] = 1
+        card: GameCard = board.game_cards[players[0]]
+        red_row = card._rows[0]
+        red_row[0:6] = 1
+        yellow_row = card._rows[1]
+        yellow_row[4:9] = 1
+
+        card.cross_value_with_flattened_action(10)
+        card.cross_value_with_flattened_action(21)
+
         self.assertEqual(board.game_is_finished(), True)
 
     def test_game_finished_with_rows_closed_for_different_players(self):
         players = ["player1", "player2"]
         board = Board(player_ids=players)
 
-        board.game_cards[players[0]]._rows[0][10] = 1
-        board.game_cards[players[1]]._rows[1][10] = 1
+        card: GameCard = board.game_cards[players[0]]
+        red_row = card._rows[0]
+        red_row[0:6] = 1
+
+        card2: GameCard = board.game_cards[players[1]]
+        yellow_row = card._rows[1]
+        yellow_row[4:9] = 1
+
+        card.cross_value_with_flattened_action(10)
+        card2.cross_value_with_flattened_action(21)
+
         self.assertEqual(board.game_is_finished(), True)
 
 
