@@ -69,8 +69,12 @@ class GameCard:
                 combined_mask[row_index][pass_field] = 1
 
         allowed_to_skip_without_passing = not is_tossing_player or not is_second_part_of_round or self.crossed_something_in_current_round
+
         if allowed_to_skip_without_passing:
             combined_mask[row_index][3:] = 1
+            # We don't want to give the option that the player crosses the pass as not learning players can't learn this
+            combined_mask[row_index][0:4] = 0
+
 
     def _get_mask_based_on_crossed_numbers(self):
         mask_based_on_crossed_numbers = np.zeros(shape=GameCard.ACTION_MASK_SHAPE, dtype=int8)

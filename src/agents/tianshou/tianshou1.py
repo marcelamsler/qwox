@@ -13,6 +13,7 @@ from tianshou.utils import WandbLogger
 from tianshou.utils.net.common import Net
 from torch.utils.tensorboard import SummaryWriter
 
+from agents.tianshou.lowest_value_taker_policy import LowestValueTakerPolicy
 from env.wrapped_quox_env import wrapped_quox_env
 
 
@@ -77,7 +78,7 @@ if __name__ == "__main__":
     test_envs.seed(seed)
 
     # ======== Step 2: Agent setup =========
-    policy, optim, agents = _get_agents(logger.wandb_run)
+    policy, optim, agents = _get_agents(logger.wandb_run, agent_opponent=LowestValueTakerPolicy())
 
     # ======== Step 3: Collector setup =========
     train_collector = Collector(

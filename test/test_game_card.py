@@ -72,7 +72,8 @@ class GameCardTest(unittest.TestCase):
         expected_action_mask[1][combined_value_of_white_dices - 2] = 1
         expected_action_mask[2][12 - combined_value_of_white_dices] = 1
         expected_action_mask[3][12 - combined_value_of_white_dices] = 1
-        expected_action_mask[4] = 1
+        expected_action_mask[4][0:3] = 0
+        expected_action_mask[4][4:] = 1
 
         computed_action_mask = card.get_allowed_actions_mask(dices=get_dices_with_value(value=1),
                                                              is_tossing_player=True, is_second_part_of_round=False)
@@ -147,7 +148,9 @@ class GameCardTest(unittest.TestCase):
                                                              is_tossing_player=False, is_second_part_of_round=True)
 
         expected_action_mask = np.zeros(shape=(5, 11), dtype=int8)
-        expected_action_mask[4] = 1
+        expected_action_mask[4][0:3] = 0
+        expected_action_mask[4][4:] = 1
+        print(expected_action_mask)
 
         assert_array_equal(computed_action_mask, expected_action_mask)
 
@@ -161,7 +164,9 @@ class GameCardTest(unittest.TestCase):
         expected_action_map[Color.RED.value][6 - 2] = 1
         expected_action_map[Color.GREEN.value][12 - 6] = 1
         expected_action_map[Color.BLUE.value][12 - 6] = 1
-        expected_action_map[4] = 1
+        expected_action_map[4][0:4] = 0
+        expected_action_map[4][4:] = 1
+
 
         computed_action_mask = card.get_allowed_actions_mask(dices=get_dices_with_value(3),
                                                              is_tossing_player=False, is_second_part_of_round=False)

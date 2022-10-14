@@ -198,8 +198,9 @@ class QwoxEnv(AECEnv):
                       "Learned Player: ", self.board.game_cards[self.agents[1]].get_points())
 
                 self.render()
-                self.wandb.log({"player_1_points": self.board.game_cards[self.agents[0]].get_points(),
-                           "player_2_points": self.board.game_cards[self.agents[1]].get_points()})
+                if self.wandb:
+                    self.wandb.log({"player_1_points": self.board.game_cards[self.agents[0]].get_points(),
+                                    "player_2_points": self.board.game_cards[self.agents[1]].get_points()})
 
             # Reset for next round
             if is_second_part_of_round:
