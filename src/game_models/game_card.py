@@ -123,7 +123,8 @@ class GameCard:
         row_index, column_index = np.array(np.unravel_index(action, shape=(5, 11)), dtype=np.intp)
         self._rows[row_index, column_index] = 1
         self._close_row_if_possible(row_index, column_index)
-        self.crossed_something_in_current_round = True
+        if action <= 43:
+            self.crossed_something_in_current_round = True
 
     def _close_row_if_possible(self, row_index, column_index):
         last_crossable_index_in_row = 10

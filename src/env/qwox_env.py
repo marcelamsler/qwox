@@ -3,6 +3,7 @@ import logging
 from typing import Optional
 
 import numpy as np
+import wandb
 from gym import spaces
 from gym.spaces import Box, Discrete
 from pettingzoo import AECEnv
@@ -53,6 +54,7 @@ class QwoxEnv(AECEnv):
         self.dones: {AgentID: bool} = {agent_id: False for agent_id in self.agents}
         self.total_started_step_count = 0
         self.current_tosser_index = 0
+        self.wandb = None
 
     # this cache ensures that same space object is returned for the same agent
     # allows action space seeding to work as expected
@@ -88,7 +90,8 @@ class QwoxEnv(AECEnv):
             print(agent_id, "| Round", self.current_round,
                   "part", part_of_round,
                   "| Tossing Agent: ",
-                  is_tossing_agent, "| Reward", self.rewards[agent_id], "| Action: ", action)
+                  is_tossing_agent, "| Reward", self.rewards[agent_id], "| Action: ", action, "| Passes used",
+                  self.board.game_cards[agent_id].get_pass_count())
             observation = self.observe(agent_id)["observation"].reshape(5, 12)
             print(observation[0])
             print(observation[1])
@@ -190,26 +193,31 @@ class QwoxEnv(AECEnv):
 
         if self._agent_selector.is_last():
             self.dones = {agent: self.board.game_is_finished() for agent in self.agents}
+            if self.board.game_is_finished():
+                print("Total Rewards: Random Player:", self.board.game_cards[self.agents[0]].get_points(),
+                      "Learned Player: ", self.board.game_cards[self.agents[1]].get_points())
 
-        if 80 < (self.total_started_step_count % 1000) < 90:
-            self.render_for_one_agent(current_agent_id, action=action)
+                self.render()
+                self.wandb.log({"player_1_points": self.board.game_cards[self.agents[0]].get_points(),
+                           "player_2_points": self.board.game_cards[self.agents[1]].get_points()})
 
-        # Reset for next round
-        if is_second_part_of_round:
-            current_game_card.crossed_something_in_current_round = False
+            # Reset for next round
+            if is_second_part_of_round:
+                current_game_card.crossed_something_in_current_round = False
 
-        self._cumulative_rewards[self.agent_selection] = 0
-        # selects the next agent.
-        self.agent_selection = self._agent_selector.next()
+            self._cumulative_rewards[self.agent_selection] = 0
+            # selects the next agent.
+            self.agent_selection = self._agent_selector.next()
 
-        # Check if next agent has to toss the dices and do it before the next agent takes its step, as the dice
-        # state need to be known by the agent that takes a step
-        next_agent_tossing_agent = self.get_tossing_agent_index(self.current_round) == self.agents.index(
-            current_agent_id)
-        if next_agent_tossing_agent:
-            self.board.roll_dices()
-        # Adds .rewards to ._cumulative_rewards
-        self._accumulate_rewards()
+            # Check if next agent has to toss the dices and do it before the next agent takes its step, as the dice
+            # state need to be known by the agent that takes a step
+            next_agent_tossing_agent = self.get_tossing_agent_index(self.current_round) == self.agents.index(
+                current_agent_id)
+
+            if next_agent_tossing_agent:
+                self.board.roll_dices()
+            # Adds .rewards to ._cumulative_rewards
+            self._accumulate_rewards()
 
     def get_tossing_agent_index(self, current_round):
         return (current_round - 1) % self.num_agents

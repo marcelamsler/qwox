@@ -32,6 +32,19 @@ class BoardTest(unittest.TestCase):
 
         self.assertEqual(board.game_is_finished(), True)
 
+    def test_game_finished_with_passes(self):
+        players = ["player1", "player2"]
+        board = Board(player_ids=players)
+
+        card: GameCard = board.game_cards[players[0]]
+
+        card.cross_value_with_flattened_action(44)
+        card.cross_value_with_flattened_action(45)
+        card.cross_value_with_flattened_action(46)
+        card.cross_value_with_flattened_action(47)
+
+        self.assertEqual(board.game_is_finished(), True)
+
     def test_game_finished_with_rows_closed_for_different_players(self):
         players = ["player1", "player2"]
         board = Board(player_ids=players)

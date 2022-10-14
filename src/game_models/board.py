@@ -17,9 +17,8 @@ class Board:
             dice.roll()
 
     def game_is_finished(self):
-
         for card in self.game_cards.values():
-            if np.count_nonzero(card.get_pass_count()) == 4:
+            if card.get_pass_count() == 4:
                 return True
 
         closed_rows_without_duplicates = self.get_closed_row_indexes()

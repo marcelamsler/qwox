@@ -17,11 +17,12 @@ from env.wrapped_quox_env import wrapped_quox_env
 
 
 def _get_agents(
+        wandb,
         agent_learn: Optional[BasePolicy] = None,
         agent_opponent: Optional[BasePolicy] = None,
         optim: Optional[torch.optim.Optimizer] = None,
 ) -> Tuple[BasePolicy, torch.optim.Optimizer, list]:
-    env = _get_env()
+    env = _get_env(wandb)
     observation_space = (
         env.observation_space["observation"]
     )
@@ -51,16 +52,22 @@ def _get_agents(
     return policy, optim, env.agents
 
 
-def _get_env():
+def _get_env(wandb):
     """This function is needed to provide callables for DummyVectorEnv."""
-    return PettingZooEnv(wrapped_quox_env())
+    env = wrapped_quox_env()
+    env.unwrapped.wandb = wandb
+    return PettingZooEnv(env)
 
 
 if __name__ == "__main__":
+    log_path = os.path.join("log", "summary.log")
+    logger = WandbLogger(project="Tianshou1")
 
+    logger.load(SummaryWriter(log_path))
     # ======== Step 1: Environment setup =========
-    train_envs = DummyVectorEnv([_get_env for _ in range(10)])
-    test_envs = DummyVectorEnv([_get_env for _ in range(10)])
+    _get_env_with_wandb = lambda: _get_env(logger.wandb_run)
+    train_envs = DummyVectorEnv([_get_env_with_wandb for _ in range(10)])
+    test_envs = DummyVectorEnv([_get_env_with_wandb for _ in range(10)])
 
     # seed
     seed = 1
@@ -70,7 +77,7 @@ if __name__ == "__main__":
     test_envs.seed(seed)
 
     # ======== Step 2: Agent setup =========
-    policy, optim, agents = _get_agents()
+    policy, optim, agents = _get_agents(logger.wandb_run)
 
     # ======== Step 3: Collector setup =========
     train_collector = Collector(
@@ -83,9 +90,7 @@ if __name__ == "__main__":
     # policy.set_eps(1)
     train_collector.collect(n_step=64 * 10)  # batch size * training_num
 
-    log_path = os.path.join("log", "summary.log")
-    logger = WandbLogger(project="Tianshou1")
-    logger.load(SummaryWriter(log_path))
+
 
 
     # ======== Step 4: Callback functions setup =========
@@ -121,7 +126,7 @@ if __name__ == "__main__":
         test_collector=test_collector,
         max_epoch=200,
         step_per_epoch=1000,
-        step_per_collect=50,
+        step_per_collect=100,
         episode_per_test=20,
         batch_size=64,
         train_fn=train_fn,
