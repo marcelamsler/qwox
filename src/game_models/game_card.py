@@ -1,10 +1,7 @@
-import itertools
-from typing import Dict
-
 import numpy as np
-from numpy import int8
 import numpy.typing as npt
-import numpy.ma as ma
+from numpy import int8
+
 from game_models.color import Color
 from game_models.dice import Dice
 
@@ -24,10 +21,12 @@ class GameCard:
             checked_count = np.count_nonzero(row)
             total_points += self.calculate_points_for_row(checked_count)
 
-        passes = self._rows[4][0:4]
-        total_points += np.count_nonzero(passes) * -5
+        total_points += self.get_pass_count() * -5
 
         return total_points
+
+    def get_pass_count(self):
+        return np.count_nonzero(self._rows[4][0:4])
 
     @staticmethod
     def calculate_points_for_row(checked_count: int) -> int:
@@ -58,18 +57,19 @@ class GameCard:
 
         combined_mask = mask_based_on_crossed_numbers & mask_based_on_dices
 
-        self.add_pass_numbers_and_none_actions(combined_mask, is_second_part_of_round)
+        self.add_pass_numbers_and_none_actions(combined_mask, is_second_part_of_round, is_tossing_player)
 
         return combined_mask
 
-    def add_pass_numbers_and_none_actions(self, combined_mask, is_second_part_of_round):
+    def add_pass_numbers_and_none_actions(self, combined_mask, is_second_part_of_round, is_tossing_player):
         row_index = 4
         row = self._rows[row_index]
         for pass_field in range(0, 4):
             if row[pass_field] == 0:
                 combined_mask[row_index][pass_field] = 1
 
-        if self.crossed_something_in_current_round and is_second_part_of_round:
+        allowed_to_skip_without_passing = not is_tossing_player or not is_second_part_of_round or self.crossed_something_in_current_round
+        if allowed_to_skip_without_passing:
             combined_mask[row_index][3:] = 1
 
     def get_mask_based_on_crossed_numbers(self):

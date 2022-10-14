@@ -29,6 +29,5 @@ class BoardTest(unittest.TestCase):
         self.assertEqual(board.game_is_finished(), True)
 
 
-
 if __name__ == '__main__':
     unittest.main()

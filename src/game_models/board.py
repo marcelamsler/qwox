@@ -19,7 +19,7 @@ class Board:
     def game_is_finished(self):
         closed_rows: list[int] = []
         for card in self.game_cards.values():
-            if np.count_nonzero(card.passes) == 4:
+            if np.count_nonzero(card.get_pass_count()) == 4:
                 return True
             else:
                 closed_rows.extend(card.get_closed_row_indexes())
