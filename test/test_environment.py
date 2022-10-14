@@ -54,11 +54,7 @@ class EnvironmentTest(unittest.TestCase):
             observation, reward, _, info = env.last()
             print("last reward for this agent", agent, reward)
 
-            if np.count_nonzero(observation["action_mask"][:44]) > 0:
-                action = random.choice(np.flatnonzero(observation["action_mask"]))
-            else:
-                print("Couldn't find possible action, so taking 54")
-                action = 54
+            action = random.choice(np.flatnonzero(observation["action_mask"]))
 
             env.step(action)
 

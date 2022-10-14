@@ -19,7 +19,7 @@ class GameCard:
         total_points = 0
         for row in self._rows[:4]:
             checked_count = np.count_nonzero(row)
-            total_points += self.calculate_points_for_row(checked_count)
+            total_points += self._calculate_points_for_row(checked_count)
 
         total_points += self.get_pass_count() * -5
 
@@ -29,7 +29,7 @@ class GameCard:
         return np.count_nonzero(self._rows[4][0:4])
 
     @staticmethod
-    def calculate_points_for_row(checked_count: int) -> int:
+    def _calculate_points_for_row(checked_count: int) -> int:
         """
         The game gives points based on checked numbers in a row
 
@@ -48,20 +48,20 @@ class GameCard:
 
     def get_allowed_actions_mask(self, dices: list[Dice], is_tossing_player: bool, is_second_part_of_round: int):
         """
-        First 44 values are for values on the board, the 44th - 48th are for pass fields and 49th - 55th should do nothing
+        First 44 values are for values on the board, the 44th - 48th are for pass fields and 49th - 55th are used
+        for doing nothing. Doing nothing is not allowed when player hasn't taken any action but has tossed in this round
         :return: np.array with shape (4,11) and 1 everywhere an action is allowed and 0 where its not allowed
-
         """
-        mask_based_on_crossed_numbers = self.get_mask_based_on_crossed_numbers()
-        mask_based_on_dices = self.get_mask_based_on_dices(dices, is_tossing_player, is_second_part_of_round)
+        mask_based_on_crossed_numbers = self._get_mask_based_on_crossed_numbers()
+        mask_based_on_dices = self._get_mask_based_on_dices(dices, is_tossing_player, is_second_part_of_round)
 
         combined_mask = mask_based_on_crossed_numbers & mask_based_on_dices
 
-        self.add_pass_numbers_and_none_actions(combined_mask, is_second_part_of_round, is_tossing_player)
+        self._add_pass_numbers_and_none_actions(combined_mask, is_second_part_of_round, is_tossing_player)
 
         return combined_mask
 
-    def add_pass_numbers_and_none_actions(self, combined_mask, is_second_part_of_round, is_tossing_player):
+    def _add_pass_numbers_and_none_actions(self, combined_mask, is_second_part_of_round, is_tossing_player):
         row_index = 4
         row = self._rows[row_index]
         for pass_field in range(0, 4):
@@ -72,7 +72,7 @@ class GameCard:
         if allowed_to_skip_without_passing:
             combined_mask[row_index][3:] = 1
 
-    def get_mask_based_on_crossed_numbers(self):
+    def _get_mask_based_on_crossed_numbers(self):
         mask_based_on_crossed_numbers = np.zeros(shape=GameCard.ACTION_MASK_SHAPE, dtype=int8)
         for mask_index, mask_row in enumerate(mask_based_on_crossed_numbers):
             if mask_index <= 3:
@@ -86,7 +86,7 @@ class GameCard:
         return mask_based_on_crossed_numbers
 
     @staticmethod
-    def get_mask_based_on_dices(dices, is_tossing_player, is_second_part_of_round):
+    def _get_mask_based_on_dices(dices, is_tossing_player, is_second_part_of_round):
         mask = np.zeros(shape=GameCard.ACTION_MASK_SHAPE, dtype=int8)
 
         if is_second_part_of_round:
@@ -110,7 +110,7 @@ class GameCard:
 
         return mask
 
-    def cross_value_in_line(self, line_color: Color, value: int):
+    def _cross_value_in_line(self, line_color: Color, value: int):
         row: npt.NDArray = self._rows[line_color.value]
         if GameCard.is_reversed_line(line_color):
             row[12 - value] = 1
@@ -122,25 +122,21 @@ class GameCard:
     def cross_value_with_flattened_action(self, action):
         row_index, column_index = np.array(np.unravel_index(action, shape=(5, 11)), dtype=np.intp)
         self._rows[row_index, column_index] = 1
-        self.close_row_if_possible(row_index, column_index)
+        self._close_row_if_possible(row_index, column_index)
         self.crossed_something_in_current_round = True
 
-    def close_row_if_possible(self, row_index, column_index):
+    def _close_row_if_possible(self, row_index, column_index):
         last_crossable_index_in_row = 10
-        if column_index == last_crossable_index_in_row:
+        if column_index == last_crossable_index_in_row and np.count_nonzero(self._rows[row_index]) >= 5:
             self._rows[row_index, column_index + 1] = 1
 
-    def is_row_closed(self, row_index) -> bool:
-        # TODO row can only be closed if 5 other fields are checked in that row
-        # TODO row closing will give additional points to closing agent
-        # TODO row will then be closed for all others
-        # TODO Dice will not be there anymore (needed?)
+    def _is_row_closed(self, row_index) -> bool:
         return self._rows[row_index][-1] == 1
 
     def get_closed_row_indexes(self):
         closed_row_indexes: list[int] = []
         for index, row in enumerate(self._rows):
-            if self.is_row_closed(index):
+            if self._is_row_closed(index):
                 closed_row_indexes.append(index)
         return closed_row_indexes
 
