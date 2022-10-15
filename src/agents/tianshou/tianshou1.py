@@ -13,6 +13,7 @@ from tianshou.utils import WandbLogger
 from tianshou.utils.net.common import Net
 from torch.utils.tensorboard import SummaryWriter
 
+from agents.tianshou.long_playing_policy import LongPlayingPolicy
 from agents.tianshou.lowest_value_taker_policy import LowestValueTakerPolicy
 from env.wrapped_quox_env import wrapped_quox_env
 
@@ -32,7 +33,7 @@ def _get_agents(
         net = Net(
             state_shape=observation_space.shape or observation_space.n,
             action_shape=env.action_space.shape or env.action_space.n,
-            hidden_sizes=[128, 128, 128, 128],
+            hidden_sizes=[128, 128, 128, 128, 128, 128],
             device="cuda" if torch.cuda.is_available() else "cpu",
         ).to("cuda" if torch.cuda.is_available() else "cpu")
         if optim is None:
@@ -41,9 +42,10 @@ def _get_agents(
             model=net,
             optim=optim,
             discount_factor=0.9,
-            estimation_step=3,
+            estimation_step=5,
             target_update_freq=320,
         )
+        wandb.watch(net)
 
     if agent_opponent is None:
         agent_opponent = RandomPolicy()
@@ -78,7 +80,7 @@ if __name__ == "__main__":
     test_envs.seed(seed)
 
     # ======== Step 2: Agent setup =========
-    policy, optim, agents = _get_agents(logger.wandb_run, agent_opponent=LowestValueTakerPolicy())
+    policy, optim, agents = _get_agents(logger.wandb_run, agent_opponent=LongPlayingPolicy())
 
     # ======== Step 3: Collector setup =========
     train_collector = Collector(
@@ -125,7 +127,7 @@ if __name__ == "__main__":
         policy=policy,
         train_collector=train_collector,
         test_collector=test_collector,
-        max_epoch=300,
+        max_epoch=400,
         step_per_epoch=1000,
         step_per_collect=100,
         episode_per_test=20,
@@ -144,3 +146,4 @@ if __name__ == "__main__":
     # return result, policy.policies[agents[1]]
     print(f"\n==========Result==========\n{result}")
     print("\n(the trained policy can be accessed via policy.policies[agents[1]])")
+    logger.wandb_run.finish()

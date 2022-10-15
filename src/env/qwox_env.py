@@ -216,9 +216,6 @@ class QwoxEnv(AECEnv):
                                     "player_2_passes": self.board.game_cards[self.agents[1]].get_pass_count(),
                                     "closed_rows": len(self.board.get_closed_row_indexes())})
 
-                # if 80 < (self.total_started_step_count % 1000) < 90:
-            #    self.render_for_one_agent(current_agent_id, action=action)
-
         # Reset for next round
         if is_second_part_of_round:
             current_game_card.crossed_something_in_current_round = False
