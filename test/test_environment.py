@@ -52,11 +52,13 @@ class EnvironmentTest(unittest.TestCase):
         env.reset()
         for agent in env.agent_iter():
             observation, reward, _, info = env.last()
-            print("last reward for this agent", agent, reward)
 
             action = random.choice(np.flatnonzero(observation["action_mask"]))
 
             env.step(action)
+
+            if env.unwrapped.board.game_is_finished():
+                return
 
 
 if __name__ == '__main__':

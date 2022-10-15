@@ -28,6 +28,16 @@ class GameCardTest(unittest.TestCase):
         expected_state[Color.RED.value][2] = 1
         assert_array_equal(card.get_state(), expected_state)
 
+    def test_cross_value_with_flat_index_action_in_later_row(self):
+        card = GameCard("some_player_id")
+        card.cross_value_with_flattened_action(33)
+        card.cross_value_with_flattened_action(36)
+
+        expected_state = np.zeros(shape=GameCard.OBSERVATION_SHAPE, dtype=int8)
+        expected_state[Color.BLUE.value][0] = 1
+        expected_state[Color.BLUE.value][3] = 1
+        assert_array_equal(card.get_state(), expected_state)
+
     def test_row_closing(self):
         card = GameCard("some_player_id")
 
@@ -93,7 +103,17 @@ class GameCardTest(unittest.TestCase):
         expected_action_mask[3][12 - combined_value_of_white_and_one_colored_dice] = 1
         self.force_to_use_pass_fields(expected_action_mask)
 
+        card.cross_value_with_flattened_action(48)
+        card.cross_value_with_flattened_action(49)
+        print(computed_action_mask)
+        print(expected_action_mask)
         assert_array_equal(computed_action_mask, expected_action_mask)
+
+    def test_indexes(self):
+        print(np.arange(0, 55).reshape(5, 11))
+
+    def test_observation_indexes(self):
+        print(np.arange(0, 60).reshape(5, 12))
 
     def test_valid_actions_with_different_value_dices_for_second_part_of_round(self):
         card = GameCard("some_player_id")
@@ -150,7 +170,6 @@ class GameCardTest(unittest.TestCase):
         expected_action_mask = np.zeros(shape=(5, 11), dtype=int8)
         expected_action_mask[4][0:3] = 0
         expected_action_mask[4][4:] = 1
-        print(expected_action_mask)
 
         assert_array_equal(computed_action_mask, expected_action_mask)
 
@@ -191,6 +210,7 @@ class GameCardTest(unittest.TestCase):
     def test_mask_for_passes(self):
         card = GameCard("some_player_id")
         card.cross_value_with_flattened_action(44)  # add one pass
+        card.cross_value_with_flattened_action(47)  # add one pass
         card.crossed_something_in_current_round = False
         computed_action_mask = card.get_allowed_actions_mask(dices=get_dices_with_value(value=4),
                                                              is_tossing_player=True, is_second_part_of_round=True)
@@ -203,14 +223,18 @@ class GameCardTest(unittest.TestCase):
         expected_action_mask[3][12 - combined_value_of_white_and_one_colored_dice] = 1
 
         self.force_to_use_pass_fields(expected_action_mask)
-        expected_action_mask[4][0] = 0  # set the pass from above, which can't be crossed again
+        # set the pass from above, which can't be crossed again
+        expected_action_mask[4][0] = 0
+        expected_action_mask[4][3] = 0
+
+        print(computed_action_mask)
 
         assert_array_equal(computed_action_mask, expected_action_mask)
 
     @staticmethod
     def force_to_use_pass_fields(expected_action_mask):
-        expected_action_mask[4][0:4] = 1
-        expected_action_mask[4][4:10] = 0
+        expected_action_mask[4][:4] = 1
+        expected_action_mask[4][4:] = 0
 
     def test_get_points_for_passed_field(self):
         card = GameCard("some_player_id")
@@ -234,7 +258,6 @@ class GameCardTest(unittest.TestCase):
         red_row = card._rows[0]
         red_row[0:5] = 1
         card.cross_value_with_flattened_action(10)
-        print(card.get_state())
         self.assertEqual(28, card.get_points())
 
     def test_calculate_points_for_row(self):

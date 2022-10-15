@@ -50,6 +50,7 @@ class GameCard:
         """
         First 44 values are for values on the board, the 44th - 48th are for pass fields and 49th - 55th are used
         for doing nothing. Doing nothing is not allowed when player hasn't taken any action but has tossed in this round
+
         :return: np.array with shape (4,11) and 1 everywhere an action is allowed and 0 where its not allowed
         """
         mask_based_on_crossed_numbers = self._get_mask_based_on_crossed_numbers()
@@ -57,9 +58,9 @@ class GameCard:
 
         combined_mask = mask_based_on_crossed_numbers & mask_based_on_dices
 
-        self._add_pass_numbers_and_none_actions(combined_mask, is_second_part_of_round, is_tossing_player)
+        final_mask = self._add_pass_numbers_and_none_actions(combined_mask, is_second_part_of_round, is_tossing_player)
 
-        return combined_mask
+        return final_mask
 
     def _add_pass_numbers_and_none_actions(self, combined_mask, is_second_part_of_round, is_tossing_player):
         row_index = 4
@@ -75,6 +76,7 @@ class GameCard:
             # We don't want to give the option that the player crosses the pass as not learning players can't learn this
             combined_mask[row_index][0:4] = 0
 
+        return combined_mask
 
     def _get_mask_based_on_crossed_numbers(self):
         mask_based_on_crossed_numbers = np.zeros(shape=GameCard.ACTION_MASK_SHAPE, dtype=int8)
@@ -124,11 +126,25 @@ class GameCard:
         self.crossed_something_in_current_round = True
 
     def cross_value_with_flattened_action(self, action):
-        row_index, column_index = np.array(np.unravel_index(action, shape=(5, 11)), dtype=np.intp)
-        self._rows[row_index, column_index] = 1
-        self._close_row_if_possible(row_index, column_index)
+        """
+        This allows to set the value based on a flat index. This is based on the action_space
+        and not observation space, as the agent can only set on action space. (observation space has one more column
+        to set a row as closed)
+         Indexes:
+            [[ 0  1  2  3  4  5  6  7  8  9 10]
+            [11 12 13 14 15 16 17 18 19 20 21]
+            [22 23 24 25 26 27 28 29 30 31 32]
+            [33 34 35 36 37 38 39 40 41 42 43]
+            [44 45 46 47 48 49 50 51 52 53 54]]
+        :param action:
+        """
         if action <= 43:
             self.crossed_something_in_current_round = True
+
+        if action <= 47:
+            row_index, column_index = np.array(np.unravel_index(action, shape=(5, 11)), dtype=np.intp)
+            self._rows[row_index, column_index] = 1
+            self._close_row_if_possible(row_index, column_index)
 
     def _close_row_if_possible(self, row_index, column_index):
         last_crossable_index_in_row = 10
