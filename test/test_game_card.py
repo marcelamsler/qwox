@@ -186,7 +186,6 @@ class GameCardTest(unittest.TestCase):
         expected_action_map[4][0:4] = 0
         expected_action_map[4][4:] = 1
 
-
         computed_action_mask = card.get_allowed_actions_mask(dices=get_dices_with_value(3),
                                                              is_tossing_player=False, is_second_part_of_round=False)
 
@@ -259,6 +258,14 @@ class GameCardTest(unittest.TestCase):
         red_row[0:5] = 1
         card.cross_value_with_flattened_action(10)
         self.assertEqual(28, card.get_points())
+
+    def test_get_points_total(self):
+        card = GameCard("some_player_id")
+        card._rows[0][5:] = 1  # 28
+        card._rows[1][2:5] = 1  # 6
+        card._rows[4][1] = 1  # -5
+        print(card.get_state())
+        self.assertEqual(29, card.get_points())
 
     def test_calculate_points_for_row(self):
         points = GameCard._calculate_points_for_row(3)

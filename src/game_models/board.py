@@ -1,4 +1,3 @@
-import numpy as np
 from pettingzoo.utils.env import AgentID
 
 from src.game_models.color import Color
@@ -27,7 +26,7 @@ class Board:
 
         return False
 
-    def get_closed_row_indexes(self):
+    def get_closed_row_indexes(self) -> list[int]:
         closed_rows: list[int] = []
         for card in self.game_cards.values():
             closed_rows.extend(card.get_closed_row_indexes())

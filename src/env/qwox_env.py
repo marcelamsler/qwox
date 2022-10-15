@@ -89,7 +89,8 @@ class QwoxEnv(AECEnv):
                   "part", part_of_round,
                   "| Tossing Agent: ",
                   is_tossing_agent, "| Reward", self.rewards[agent_id], "| Action: ", action, "| Passes used",
-                  self.board.game_cards[agent_id].get_pass_count())
+                  self.board.game_cards[agent_id].get_pass_count(), "| Closed Rows",
+                  self.board.get_closed_row_indexes())
             observation = self.observe(agent_id)["observation"].reshape(5, 12)
             print(observation[0])
             print(observation[1])
@@ -210,10 +211,13 @@ class QwoxEnv(AECEnv):
                 self.render()
                 if self.wandb:
                     self.wandb.log({"player_1_points": self.board.game_cards[self.agents[0]].get_points(),
-                                    "player_2_points": self.board.game_cards[self.agents[1]].get_points()})
+                                    "player_2_points": self.board.game_cards[self.agents[1]].get_points(),
+                                    "player_1_passes": self.board.game_cards[self.agents[0]].get_pass_count(),
+                                    "player_2_passes": self.board.game_cards[self.agents[1]].get_pass_count(),
+                                    "closed_rows": len(self.board.get_closed_row_indexes())})
 
-        if 80 < (self.total_started_step_count % 1000) < 90:
-            self.render_for_one_agent(current_agent_id, action=action)
+                # if 80 < (self.total_started_step_count % 1000) < 90:
+            #    self.render_for_one_agent(current_agent_id, action=action)
 
         # Reset for next round
         if is_second_part_of_round:
