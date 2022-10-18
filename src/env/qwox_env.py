@@ -210,11 +210,16 @@ class QwoxEnv(AECEnv):
 
                 self.render()
                 if self.wandb:
+                    are_closed_rows_reason_for_finish = len(self.board.get_closed_row_indexes()) >= 2
+                    finish_reason = 1 if are_closed_rows_reason_for_finish else 0
                     self.wandb.log({"player_1_points": self.board.game_cards[self.agents[0]].get_points(),
                                     "player_2_points": self.board.game_cards[self.agents[1]].get_points(),
                                     "player_1_passes": self.board.game_cards[self.agents[0]].get_pass_count(),
                                     "player_2_passes": self.board.game_cards[self.agents[1]].get_pass_count(),
-                                    "closed_rows": len(self.board.get_closed_row_indexes())})
+                                    "closed_rows": len(self.board.get_closed_row_indexes()),
+                                    "point_difference": self.board.game_cards[self.agents[1]].get_points() -
+                                                        self.board.game_cards[self.agents[0]].get_points(),
+                                    "finish_reason": finish_reason})
 
         # Reset for next round
         if is_second_part_of_round:
@@ -252,8 +257,6 @@ class QwoxEnv(AECEnv):
     @staticmethod
     def is_second_part_of_round(total_started_step_count, num_agents):
         steps_in_one_round = num_agents * 2
-        if total_started_step_count <= steps_in_one_round:
-            return total_started_step_count > num_agents
-        else:
-            steps_in_this_round = total_started_step_count % steps_in_one_round
-            return steps_in_this_round > num_agents
+
+        steps_in_this_round = total_started_step_count % steps_in_one_round
+        return steps_in_this_round > num_agents or steps_in_this_round == 0

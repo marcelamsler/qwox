@@ -47,6 +47,9 @@ class EnvironmentTest(unittest.TestCase):
         after_one_action_in_second_round = QwoxEnv.is_second_part_of_round(total_started_step_count=5, num_agents=2)
         self.assertEqual(False, after_one_action_in_second_round)
 
+        after_3_actions_in_second_round = QwoxEnv.is_second_part_of_round(total_started_step_count=8, num_agents=2)
+        self.assertEqual(True, after_3_actions_in_second_round)
+
     def test_environment_manually(self):
         env = wrapped_quox_env()
         env.reset()
@@ -55,10 +58,37 @@ class EnvironmentTest(unittest.TestCase):
 
             action = random.choice(np.flatnonzero(observation["action_mask"]))
 
+            env.render()
             env.step(action)
 
             if env.unwrapped.board.game_is_finished():
                 return
+
+    def test_environment_manually(self):
+        env = wrapped_quox_env()
+        env.reset()
+        for agent in env.agent_iter():
+            observation, reward, _, info = env.last()
+
+            action = random.choice(np.flatnonzero(observation["action_mask"]))
+
+            env.render()
+            env.step(action)
+
+            if env.unwrapped.board.game_is_finished():
+                return
+
+    def test_get_round(self):
+        round = QwoxEnv.get_round(total_started_step_count=1, agent_count=2)
+        self.assertEqual(1, round)
+
+        round = QwoxEnv.get_round(total_started_step_count=5, agent_count=2)
+        self.assertEqual(2, round)
+
+        round = QwoxEnv.get_round(total_started_step_count=4, agent_count=2)
+        self.assertEqual(1, round)
+
+
 
 
 if __name__ == '__main__':

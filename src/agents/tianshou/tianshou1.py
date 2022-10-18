@@ -1,4 +1,5 @@
 import os
+from copy import deepcopy
 from typing import Optional, Tuple
 
 import numpy as np
@@ -23,6 +24,7 @@ def _get_agents(
         agent_learn: Optional[BasePolicy] = None,
         agent_opponent: Optional[BasePolicy] = None,
         optim: Optional[torch.optim.Optimizer] = None,
+        opponent_path: str = None
 ) -> Tuple[BasePolicy, torch.optim.Optimizer, list]:
     env = _get_env(wandb)
     observation_space = (
@@ -38,22 +40,27 @@ def _get_agents(
         ).to("cuda" if torch.cuda.is_available() else "cpu")
         if optim is None:
             optim = torch.optim.Adam(net.parameters(), lr=1e-4)
+
         agent_learn = DQNPolicy(
             model=net,
             optim=optim,
             discount_factor=0.9,
-            estimation_step=5,
+            estimation_step=1,
             target_update_freq=320,
         )
+
         wandb.watch(net)
 
     if agent_opponent is None:
-        agent_opponent = RandomPolicy()
+        if opponent_path:
+            agent_opponent = deepcopy(agent_learn)
+            agent_opponent.load_state_dict(torch.load(opponent_path))
+        else:
+            agent_opponent = RandomPolicy()
 
     agents = [agent_opponent, agent_learn]
     policy = MultiAgentPolicyManager(agents, env)
     return policy, optim, env.agents
-
 
 def _get_env(wandb):
     """This function is needed to provide callables for DummyVectorEnv."""
@@ -80,7 +87,9 @@ if __name__ == "__main__":
     test_envs.seed(seed)
 
     # ======== Step 2: Agent setup =========
-    policy, optim, agents = _get_agents(logger.wandb_run, agent_opponent=LongPlayingPolicy())
+    path = os.path.join("log", "rps", "dqn", "policy-53.pth")
+    policy, optim, agents = _get_agents(logger.wandb_run)
+
 
     # ======== Step 3: Collector setup =========
     train_collector = Collector(
@@ -127,7 +136,7 @@ if __name__ == "__main__":
         policy=policy,
         train_collector=train_collector,
         test_collector=test_collector,
-        max_epoch=400,
+        max_epoch=200,
         step_per_epoch=1000,
         step_per_collect=100,
         episode_per_test=20,
