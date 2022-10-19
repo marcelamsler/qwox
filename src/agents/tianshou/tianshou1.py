@@ -45,7 +45,7 @@ def _get_agents(
             model=net,
             optim=optim,
             discount_factor=0.9,
-            estimation_step=1,
+            estimation_step=20,
             target_update_freq=320,
         )
 
@@ -88,7 +88,7 @@ if __name__ == "__main__":
 
     # ======== Step 2: Agent setup =========
     path = os.path.join("log", "rps", "dqn", "policy-56.pth")
-    policy, optim, agents = _get_agents(logger.wandb_run, opponent_path=path)
+    policy, optim, agents = _get_agents(logger.wandb_run)
 
 
     # ======== Step 3: Collector setup =========
