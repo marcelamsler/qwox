@@ -62,7 +62,7 @@ class QwoxEnv(AECEnv):
         return spaces.Dict(
             {
                 "observation": Box(low=0, high=6, shape=(
-                self.num_agents + 1, GameCard.OBSERVATION_SHAPE_ROWS, GameCard.OBSERVATION_SHAPE_COLUMNS),
+                    self.num_agents + 1, GameCard.OBSERVATION_SHAPE_ROWS, GameCard.OBSERVATION_SHAPE_COLUMNS),
                                    dtype=np.int8),
                 "action_mask": Box(low=0, high=1, shape=(self.ACTION_SPACE_SIZE,), dtype=np.int8)
             })
@@ -93,7 +93,7 @@ class QwoxEnv(AECEnv):
                   is_tossing_agent, "| Reward", self.rewards[agent_id], "| Action: ", action, "| Passes used",
                   self.board.game_cards[agent_id].get_pass_count(), "| Closed Rows",
                   self.board.get_closed_row_indexes())
-            observation = self.observe(agent_id)["observation"].reshape(5, 12)
+            observation = self.observe(agent_id)["observation"][0].reshape(5, 12)
             print(observation[0])
             print(observation[1])
             print(observation[2])
@@ -114,10 +114,11 @@ class QwoxEnv(AECEnv):
         should return a sane observation (though not necessarily the most up to date possible)
         at any time after reset() is called.
         """
-        game_card: GameCard = self.board.game_cards[agent]
         is_tossing_agent = self.get_tossing_agent_index(self.current_round) == self.agents.index(agent)
         is_second_part_of_round = QwoxEnv.is_second_part_of_round(self.total_started_step_count, self.num_agents)
-        return {"observation": game_card.get_state(),
+        return {"observation": self.board.get_observation_for_agent(player_id=agent,
+                                                                    is_tossing_player=is_tossing_agent,
+                                                                    is_second_part_of_round=is_second_part_of_round),
                 "action_mask": self.board.get_allowed_actions_mask(agent,
                                                                    is_tossing_player=is_tossing_agent,
                                                                    is_second_part_of_round=is_second_part_of_round).flatten()}

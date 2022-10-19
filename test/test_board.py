@@ -65,6 +65,7 @@ class BoardTest(unittest.TestCase):
     def test_row_closing_for_others(self):
         players = ["player1", "player2"]
         board = Board(player_ids=players)
+        board.dices = get_dices_with_value(5)
 
         crossing_player_card: GameCard = board.game_cards[players[1]]
         yellow_row = crossing_player_card._rows[1]
@@ -73,7 +74,7 @@ class BoardTest(unittest.TestCase):
         crossing_player_card.cross_value_with_flattened_action(21)
 
         other_player_card: GameCard = board.game_cards[players[0]]
-        other_player_action_mask = board.get_allowed_actions_mask(player_id=players[0], dices=get_dices_with_value(5),
+        other_player_action_mask = board.get_allowed_actions_mask(player_id=players[0],
                                                                   is_tossing_player=False,
                                                                   is_second_part_of_round=False)
 

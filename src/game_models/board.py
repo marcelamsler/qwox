@@ -38,16 +38,17 @@ class Board:
         closed_rows_without_duplicates = list(dict.fromkeys(closed_rows))
         return closed_rows_without_duplicates
 
-    def get_allowed_actions_mask(self, player_id: str, dices: list[Dice], is_tossing_player: bool,
-                                 is_second_part_of_round: int):
-        action_mask_from_card = self.game_cards[player_id].get_allowed_actions_mask(dices, is_tossing_player,
+    def get_allowed_actions_mask(self, player_id: str, is_tossing_player: bool,
+                                 is_second_part_of_round: int) -> np.ndarray:
+        action_mask_from_card = self.game_cards[player_id].get_allowed_actions_mask(self.dices, is_tossing_player,
                                                                                     is_second_part_of_round)
         for closed_row_index in self.get_closed_row_indexes():
             action_mask_from_card[closed_row_index] = 0
 
         return action_mask_from_card
 
-    def get_observation_for_agent(self, player_id: str, is_tossing_player: bool, is_second_part_of_round: bool):
+    def get_observation_for_agent(self, player_id: str, is_tossing_player: bool,
+                                  is_second_part_of_round: bool) -> np.ndarray:
         """
         This returns the board observation for an agent. Board observation includes the game-cards of the other players
         as well as the dice values and round part. The shape is (player_count + 1, 5,12). 5,12 is on game-card state,
@@ -73,4 +74,4 @@ class Board:
 
         observation.append(additional_information)
 
-        return observation
+        return np.array(observation)
