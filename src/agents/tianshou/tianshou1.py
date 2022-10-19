@@ -26,6 +26,7 @@ def _get_agents(
         optim: Optional[torch.optim.Optimizer] = None,
         opponent_path: str = None
 ) -> Tuple[BasePolicy, torch.optim.Optimizer, list]:
+
     env = _get_env(wandb)
     observation_space = (
         env.observation_space["observation"]
@@ -88,7 +89,7 @@ if __name__ == "__main__":
 
     # ======== Step 2: Agent setup =========
     path = os.path.join("log", "rps", "dqn", "policy-56.pth")
-    policy, optim, agents = _get_agents(logger.wandb_run)
+    policy, optim, agents = _get_agents(logger.wandb_run, agent_opponent=LongPlayingPolicy())
 
 
     # ======== Step 3: Collector setup =========
@@ -136,7 +137,7 @@ if __name__ == "__main__":
         policy=policy,
         train_collector=train_collector,
         test_collector=test_collector,
-        max_epoch=300,
+        max_epoch=500,
         step_per_epoch=1000,
         step_per_collect=100,
         episode_per_test=20,

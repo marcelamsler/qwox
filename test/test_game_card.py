@@ -105,8 +105,6 @@ class GameCardTest(unittest.TestCase):
 
         card.cross_value_with_flattened_action(48)
         card.cross_value_with_flattened_action(49)
-        print(computed_action_mask)
-        print(expected_action_mask)
         assert_array_equal(computed_action_mask, expected_action_mask)
 
     def test_indexes(self):
@@ -225,8 +223,6 @@ class GameCardTest(unittest.TestCase):
         # set the pass from above, which can't be crossed again
         expected_action_mask[4][0] = 0
         expected_action_mask[4][3] = 0
-
-        print(computed_action_mask)
 
         assert_array_equal(computed_action_mask, expected_action_mask)
 

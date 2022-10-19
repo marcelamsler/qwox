@@ -64,19 +64,6 @@ class EnvironmentTest(unittest.TestCase):
             if env.unwrapped.board.game_is_finished():
                 return
 
-    def test_environment_manually(self):
-        env = wrapped_quox_env()
-        env.reset()
-        for agent in env.agent_iter():
-            observation, reward, _, info = env.last()
-
-            action = random.choice(np.flatnonzero(observation["action_mask"]))
-
-            env.render()
-            env.step(action)
-
-            if env.unwrapped.board.game_is_finished():
-                return
 
     def test_get_round(self):
         round = QwoxEnv.get_round(total_started_step_count=1, agent_count=2)

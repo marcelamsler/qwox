@@ -204,25 +204,27 @@ class QwoxEnv(AECEnv):
             else:
                 self.rewards[agent] = 0
 
-        if self._agent_selector.is_last():
-            self.dones = {agent: self.board.game_is_finished() for agent in self.agents}
-            if self.board.game_is_finished():
-                print("----------------------- > Total Rewards: Random Player:",
-                      self.board.game_cards[self.agents[0]].get_points(),
-                      "Learned Player: ", self.board.game_cards[self.agents[1]].get_points())
+        self.dones = {agent: self.board.game_is_finished() for agent in self.agents}
+        if self.board.game_is_finished():
+            learned_player_points = self.board.game_cards[self.agents[1]].get_points()
+            opponent_player_points = self.board.game_cards[self.agents[0]].get_points()
+            print("----------------------- > Total Rewards: Random Player:",
+                  opponent_player_points,
+                  "Learned Player: ", learned_player_points)
 
-                self.render()
-                if self.wandb:
-                    are_closed_rows_reason_for_finish = len(self.board.get_closed_row_indexes()) >= 2
-                    finish_reason = 1 if are_closed_rows_reason_for_finish else 0
-                    self.wandb.log({"player_1_points": self.board.game_cards[self.agents[0]].get_points(),
-                                    "player_2_points": self.board.game_cards[self.agents[1]].get_points(),
-                                    "player_1_passes": self.board.game_cards[self.agents[0]].get_pass_count(),
-                                    "player_2_passes": self.board.game_cards[self.agents[1]].get_pass_count(),
-                                    "closed_rows": len(self.board.get_closed_row_indexes()),
-                                    "point_difference": self.board.game_cards[self.agents[1]].get_points() -
-                                                        self.board.game_cards[self.agents[0]].get_points(),
-                                    "finish_reason": finish_reason})
+            self.render()
+            if self.wandb:
+                are_closed_rows_reason_for_finish = len(self.board.get_closed_row_indexes()) >= 2
+                finish_reason = 1 if are_closed_rows_reason_for_finish else 0
+                self.wandb.log({"player_1_points": opponent_player_points,
+                                "player_2_points": learned_player_points,
+                                "player_1_passes": self.board.game_cards[self.agents[0]].get_pass_count(),
+                                "player_2_passes": self.board.game_cards[self.agents[1]].get_pass_count(),
+                                "closed_rows": len(self.board.get_closed_row_indexes()),
+                                "point_difference": learned_player_points -
+                                                    opponent_player_points,
+                                "finish_reason": finish_reason,
+                                "winner": "learned_player" if learned_player_points > opponent_player_points else "opponent player" })
 
         # Reset for next round
         if is_second_part_of_round:
@@ -234,8 +236,8 @@ class QwoxEnv(AECEnv):
 
         # Check if next agent has to toss the dices and do it before the next agent takes its step, as the dice
         # state need to be known by the agent that takes a step
-        next_agent_tossing_agent = self.get_tossing_agent_index(self.current_round) == self.agents.index(
-            current_agent_id)
+        # TODO make sure that dices are only changed once per round
+        next_agent_tossing_agent = self.get_tossing_agent_index(self.current_round) == self.agents.index(current_agent_id)
 
         if next_agent_tossing_agent:
             self.board.roll_dices()
