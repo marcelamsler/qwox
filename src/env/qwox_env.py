@@ -61,7 +61,9 @@ class QwoxEnv(AECEnv):
         # Gym spaces are defined and documented here: https://gym.openai.com/docs/#spaces
         return spaces.Dict(
             {
-                "observation": Box(low=0, high=1, shape=GameCard.OBSERVATION_SHAPE, dtype=np.int8),
+                "observation": Box(low=0, high=6, shape=(
+                self.num_agents + 1, GameCard.OBSERVATION_SHAPE_ROWS, GameCard.OBSERVATION_SHAPE_COLUMNS),
+                                   dtype=np.int8),
                 "action_mask": Box(low=0, high=1, shape=(self.ACTION_SPACE_SIZE,), dtype=np.int8)
             })
 
@@ -116,7 +118,7 @@ class QwoxEnv(AECEnv):
         is_tossing_agent = self.get_tossing_agent_index(self.current_round) == self.agents.index(agent)
         is_second_part_of_round = QwoxEnv.is_second_part_of_round(self.total_started_step_count, self.num_agents)
         return {"observation": game_card.get_state(),
-                "action_mask": self.board.get_allowed_actions_mask(agent, self.board.dices,
+                "action_mask": self.board.get_allowed_actions_mask(agent,
                                                                    is_tossing_player=is_tossing_agent,
                                                                    is_second_part_of_round=is_second_part_of_round).flatten()}
 

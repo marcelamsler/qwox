@@ -9,6 +9,8 @@ from game_models.dice import Dice
 class GameCard:
     ACTION_MASK_SHAPE = (5, 11)
     OBSERVATION_SHAPE = (5, 12)
+    OBSERVATION_SHAPE_ROWS = 5
+    OBSERVATION_SHAPE_COLUMNS = 12
 
     def __init__(self, player_id: str):
         self._rows: npt.NDArray = np.zeros(shape=self.OBSERVATION_SHAPE, dtype=int8)
@@ -142,7 +144,7 @@ class GameCard:
             self.crossed_something_in_current_round = True
 
         if action <= 47:
-            row_index, column_index = np.array(np.unravel_index(action, shape=(5, 11)), dtype=np.intp)
+            row_index, column_index = np.array(np.unravel_index(action, shape=self.ACTION_MASK_SHAPE), dtype=np.intp)
             self._rows[row_index, column_index] = 1
             self._close_row_if_possible(row_index, column_index)
 

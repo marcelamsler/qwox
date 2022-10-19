@@ -1,6 +1,8 @@
 import unittest
 
 import numpy as np
+from numpy import int8
+from numpy.testing import assert_array_equal
 
 from game_models.color import Color
 from game_models.game_card import GameCard
@@ -78,6 +80,47 @@ class BoardTest(unittest.TestCase):
         count_of_allowed_actions_in_yellow_row = np.count_nonzero(other_player_action_mask[Color.YELLOW.value])
 
         self.assertEqual(0, count_of_allowed_actions_in_yellow_row)
+
+    def test_get_observation_for_agent(self):
+        players = ["player1", "player2"]
+        board = Board(player_ids=players)
+        board.dices = get_dices_with_value(2)
+
+        first_player_card: GameCard = board.game_cards[players[0]]
+        first_player_card.cross_value_with_flattened_action(0)
+
+        second_player_card: GameCard = board.game_cards[players[1]]
+        second_player_card.cross_value_with_flattened_action(1)
+
+        expected_player1_card_observation = np.zeros(shape=GameCard.OBSERVATION_SHAPE, dtype=int8)
+        expected_player1_card_observation[0][0] = 1
+
+        expected_player2_card_observation = np.zeros(shape=GameCard.OBSERVATION_SHAPE, dtype=int8)
+        expected_player2_card_observation[0][1] = 1
+
+        expected_dice_observation = np.zeros(shape=GameCard.OBSERVATION_SHAPE, dtype=int8)
+        # Set dice values
+        expected_dice_observation[0][0] = 2
+        expected_dice_observation[0][1] = 2
+        expected_dice_observation[0][2] = 2
+        expected_dice_observation[0][3] = 2
+        expected_dice_observation[0][4] = 2
+        expected_dice_observation[0][5] = 2
+
+        # Set part_of_round_value and tossing_player
+        expected_dice_observation[0][Board.PART_OF_ROUND_OBS_INDEX] = 2
+        expected_dice_observation[0][Board.TOSSING_PLAYER_OBS_INDEX] = 1
+
+        expected_observation_from_player1_perspective = [expected_player1_card_observation,
+                                                         expected_player2_card_observation,
+                                                         expected_dice_observation]
+
+        observation_player1_perspective = board.get_observation_for_agent(players[0], is_second_part_of_round=True,
+                                                                          is_tossing_player=True)
+
+        assert_array_equal(expected_observation_from_player1_perspective[0], observation_player1_perspective[0])
+        assert_array_equal(expected_observation_from_player1_perspective[1], observation_player1_perspective[1])
+        assert_array_equal(expected_observation_from_player1_perspective[2], observation_player1_perspective[2])
 
     if __name__ == '__main__':
         unittest.main()
