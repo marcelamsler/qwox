@@ -71,8 +71,42 @@ class QwoxEnv(AECEnv):
         return Discrete(self.ACTION_SPACE_SIZE)
 
     def render(self, mode: str = "human"):
+        print("")
+        print("")
+        print("Dices", self.board.dices)
+        tossing_agent = "player" + str(self.get_tossing_agent_index(self.current_round) + 1)
+        part_of_round = 2 if self.is_second_part_of_round(self.total_started_step_count, self.num_agents) else 1
+        print("Round", self.current_round,
+              "part", part_of_round,
+              "| Tossing Agent: ",
+              tossing_agent, "| Closed Rows",
+              self.board.get_closed_row_indexes())
+        print("\n")
         for agent in self.agents:
-            self.render_for_one_agent(agent)
+            print(agent, "| Passes used", self.board.game_cards[agent].get_pass_count(), "| Current Points:", self.board.game_cards[agent].get_points(), end="                        ")
+        print("")
+        for agent in self.agents:
+            observation = self.get_observation(agent)
+            print("RED   ", observation[0], "           ", end='')
+        print("")
+        for agent in self.agents:
+            observation = self.get_observation(agent)
+            print("YELLOW", observation[1], "           ", end='')
+        print("")
+        for agent in self.agents:
+            observation = self.get_observation(agent)
+            print("GREEN ", observation[2], "           ", end='')
+        print("")
+        for agent in self.agents:
+            observation = self.get_observation(agent)
+            print("BLUE  ", observation[3], "           ", end='')
+        print("\n")
+
+    def get_observation(self, agent):
+        obs = self.observe(agent)["observation"][0].reshape(5, 12).astype(str)
+        np.putmask(obs, obs == "1", "X")
+        np.putmask(obs, obs == "0", "-")
+        return obs
 
     def render_for_one_agent(self, agent_id, mode="human", action="unknown"):
         """
@@ -92,7 +126,7 @@ class QwoxEnv(AECEnv):
                   is_tossing_agent, "| Reward", self.rewards[agent_id], "| Action: ", action, "| Passes used",
                   self.board.game_cards[agent_id].get_pass_count(), "| Closed Rows",
                   self.board.get_closed_row_indexes())
-            observation = self.observe(agent_id)["observation"][0].reshape(5, 12)
+            observation = self.get_observation(agent_id)
             print(observation[0])
             print(observation[1])
             print(observation[2])
@@ -145,6 +179,7 @@ class QwoxEnv(AECEnv):
         """
         self.agents: list[AgentID] = self.possible_agents[:]
         self.board = Board(player_ids=self.possible_agents)
+        self.board.roll_dices()
         self.rewards: {AgentID: int} = {agent: 0 for agent in self.agents}
         self._cumulative_rewards: {AgentID: int} = {agent: 0 for agent in self.agents}
         self.dones: {AgentID: bool} = {agent_id: False for agent_id in self.agents}

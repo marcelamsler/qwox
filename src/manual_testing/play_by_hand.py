@@ -1,9 +1,7 @@
 import os
 
 import numpy as np
-import numpy.ma as ma
 import torch
-from numpy import int8
 from tianshou.data import Batch
 from tianshou.policy import DQNPolicy
 from tianshou.utils.net.common import Net
@@ -48,17 +46,22 @@ if __name__ == "__main__":
         observation, reward, _, info = env.last()
 
         if agent == "player_1":
-            env.render()
+            env.unwrapped.render()
             print("Possible actions:")
-            action_mask = ma.array(np.arange(0, 55, dtype=int8).reshape(5, 11), mask=np.logical_not(observation["action_mask"]).astype(int))
-            print(action_mask)
+            obs = observation["observation"][0].reshape(5, 12)[:5, :11].flatten()
+            obs = np.where(obs == 1, ["X "], ["--"])
+
+            action_mask = np.where(observation["action_mask"] == 1, np.arange(0, 55, dtype=int), -1)
+            readable_action_mask = np.where(action_mask == -1, obs, action_mask)
+            print(readable_action_mask.reshape(5, 11))
             var = input("Choose your action: ")
             action = int(var)
             print("You entered: " + var)
         else:
-            action = trained_agent(Batch(obs=Batch(obs=np.array([observation["observation"]]), mask=np.array([observation["action_mask"]])), info=info)).act[0]
+            action = trained_agent(Batch(
+                obs=Batch(obs=np.array([observation["observation"]]), mask=np.array([observation["action_mask"]])),
+                info=info)).act[0]
             print("Opponent chose: ", action)
-
 
         env.step(action)
 
