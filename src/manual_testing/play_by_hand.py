@@ -21,13 +21,13 @@ def get_trained_agent(env):
         device="cuda" if torch.cuda.is_available() else "cpu",
     ).to("cuda" if torch.cuda.is_available() else "cpu")
 
-    optim = torch.optim.Adam(net.parameters(), lr=1e-3)
+    optim = torch.optim.Adam(net.parameters(), lr=1e-4)
 
     agent_learn = DQNPolicy(
         model=net,
         optim=optim,
         discount_factor=0.9,
-        estimation_step=20,
+        estimation_step=10,
         target_update_freq=320,
     )
 
@@ -38,7 +38,7 @@ if __name__ == "__main__":
     env = wrapped_quox_env()
     env.reset()
 
-    path = os.path.join("policy-69.pth")
+    path = os.path.join("policy-72.pth")
     trained_agent = get_trained_agent(env)
     trained_agent.load_state_dict(torch.load(path))
 

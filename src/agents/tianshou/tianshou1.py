@@ -5,7 +5,7 @@ from typing import Optional, Tuple
 import numpy as np
 import wandb
 import torch
-from tianshou.data import Collector, VectorReplayBuffer
+from tianshou.data import Collector, VectorReplayBuffer, PrioritizedVectorReplayBuffer
 from tianshou.env import DummyVectorEnv
 from tianshou.env.pettingzoo_env import PettingZooEnv
 from tianshou.policy import BasePolicy, DQNPolicy, MultiAgentPolicyManager, RandomPolicy
@@ -46,7 +46,7 @@ def _get_agents(
             model=net,
             optim=optim,
             discount_factor=0.9,
-            estimation_step=20,
+            estimation_step=10,
             target_update_freq=320,
         )
 
@@ -96,7 +96,7 @@ if __name__ == "__main__":
     train_collector = Collector(
         policy,
         train_envs,
-        VectorReplayBuffer(20_000, len(train_envs)),
+        PrioritizedVectorReplayBuffer(20_000, len(train_envs), alpha=0.001, beta=0.001),
         exploration_noise=True,
     )
     test_collector = Collector(policy, test_envs, exploration_noise=True)
@@ -137,7 +137,7 @@ if __name__ == "__main__":
         policy=policy,
         train_collector=train_collector,
         test_collector=test_collector,
-        max_epoch=500,
+        max_epoch=100,
         step_per_epoch=1000,
         step_per_collect=100,
         episode_per_test=20,
