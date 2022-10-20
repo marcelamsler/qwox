@@ -184,65 +184,57 @@ class QwoxEnv(AECEnv):
         if is_second_part_of_round and not is_tossing_agent:
             logging.debug("skip agent ", current_agent_id, "with action", action)
             self.rewards = {agent: 0 for agent in self.agents}
-            self._cumulative_rewards[self.agent_selection] = 0
-            self.agent_selection = self._agent_selector.next()
+        else:
+            if action not in np.flatnonzero(self.observe(current_agent_id)["action_mask"]):
+                raise Exception("Wrong action", action, self.observe(current_agent_id)["action_mask"].reshape(5, 11))
 
-            if self.total_started_step_count % (self.num_agents * 2) == 0:
-                self.board.roll_dices()
+            # DO ACTION
+            current_game_card.cross_value_with_flattened_action(action)
 
-            current_game_card.crossed_something_in_current_round = False
-            self.total_started_step_count += 1
-            self.current_round = QwoxEnv.get_round(self.total_started_step_count, self.num_agents)
-            return
+            for agent in self.agents:
+                if agent == current_agent_id:
+                    self.rewards[current_agent_id] = current_game_card.get_points() - starting_points
+                else:
+                    self.rewards[agent] = 0
 
-        if action not in np.flatnonzero(self.observe(current_agent_id)["action_mask"]):
-            raise Exception("Wrong action", action, self.observe(current_agent_id)["action_mask"].reshape(5, 11))
+            self.dones = {agent: self.board.game_is_finished() for agent in self.agents}
+            if self.board.game_is_finished():
+                learned_player_points = self.board.game_cards[self.agents[1]].get_points()
+                opponent_player_points = self.board.game_cards[self.agents[0]].get_points()
+                print("----------------------- > Total Rewards: Random Player:",
+                      opponent_player_points,
+                      "Learned Player: ", learned_player_points)
 
-        # DO ACTION
-        current_game_card.cross_value_with_flattened_action(action)
+                self.render()
+                self.log_to_wandb_if_possible(learned_player_points, opponent_player_points)
 
-        for agent in self.agents:
-            if agent == current_agent_id:
-                self.rewards[current_agent_id] = current_game_card.get_points() - starting_points
-            else:
-                self.rewards[agent] = 0
+        self.set_state_for_next_step(current_game_card, is_second_part_of_round)
 
-        self.dones = {agent: self.board.game_is_finished() for agent in self.agents}
-        if self.board.game_is_finished():
-            learned_player_points = self.board.game_cards[self.agents[1]].get_points()
-            opponent_player_points = self.board.game_cards[self.agents[0]].get_points()
-            print("----------------------- > Total Rewards: Random Player:",
-                  opponent_player_points,
-                  "Learned Player: ", learned_player_points)
+    def log_to_wandb_if_possible(self, learned_player_points, opponent_player_points):
+        if self.wandb:
+            are_closed_rows_reason_for_finish = len(self.board.get_closed_row_indexes()) >= 2
+            finish_reason = 1 if are_closed_rows_reason_for_finish else 0
+            self.wandb.log({"player_1_points": opponent_player_points,
+                            "player_2_points": learned_player_points,
+                            "player_1_passes": self.board.game_cards[self.agents[0]].get_pass_count(),
+                            "player_2_passes": self.board.game_cards[self.agents[1]].get_pass_count(),
+                            "closed_rows": len(self.board.get_closed_row_indexes()),
+                            "point_difference": learned_player_points -
+                                                opponent_player_points,
+                            "finish_reason": finish_reason,
+                            "winner": "learned_player" if learned_player_points > opponent_player_points else "opponent player"})
 
-            self.render()
-            if self.wandb:
-                are_closed_rows_reason_for_finish = len(self.board.get_closed_row_indexes()) >= 2
-                finish_reason = 1 if are_closed_rows_reason_for_finish else 0
-                self.wandb.log({"player_1_points": opponent_player_points,
-                                "player_2_points": learned_player_points,
-                                "player_1_passes": self.board.game_cards[self.agents[0]].get_pass_count(),
-                                "player_2_passes": self.board.game_cards[self.agents[1]].get_pass_count(),
-                                "closed_rows": len(self.board.get_closed_row_indexes()),
-                                "point_difference": learned_player_points -
-                                                    opponent_player_points,
-                                "finish_reason": finish_reason,
-                                "winner": "learned_player" if learned_player_points > opponent_player_points else "opponent player"})
-
+    def set_state_for_next_step(self, current_game_card, is_second_part_of_round):
         # Reset for next round
         if is_second_part_of_round:
             current_game_card.crossed_something_in_current_round = False
-
         self._cumulative_rewards[self.agent_selection] = 0
         # selects the next agent
         self.agent_selection = self._agent_selector.next()
-
         # Adds .rewards to ._cumulative_rewards
         self._accumulate_rewards()
-
         if self.total_started_step_count % (self.num_agents * 2) == 0:
             self.board.roll_dices()
-
         self.total_started_step_count += 1
         self.current_round = QwoxEnv.get_round(self.total_started_step_count, self.num_agents)
 
