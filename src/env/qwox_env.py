@@ -51,7 +51,6 @@ class QwoxEnv(AECEnv):
         self.board: Board = Board(self.possible_agents)
         self.dones: {AgentID: bool} = {agent_id: False for agent_id in self.agents}
         self.total_started_step_count = 1
-        self.current_tosser_index = 0
         self.wandb = None
 
     # this cache ensures that same space object is returned for the same agent
@@ -151,7 +150,6 @@ class QwoxEnv(AECEnv):
         self.dones: {AgentID: bool} = {agent_id: False for agent_id in self.agents}
         self.infos = {agent: {} for agent in self.agents}
         self.total_started_step_count = 1
-        self.current_tosser_index = 0
         self.agent_selection = self.agents[0]
 
         self._agent_selector.reset()
@@ -174,10 +172,11 @@ class QwoxEnv(AECEnv):
             # the next done agent,  or if there are no more done agents, to the next live agent
             return self._was_done_step(None)
 
-        self.current_round = QwoxEnv.get_round(self.total_started_step_count, self.num_agents)
         current_agent_id: AgentID = self.agent_selection
         is_tossing_agent = self.get_tossing_agent_index(self.current_round) == self.agents.index(current_agent_id)
         is_second_part_of_round = QwoxEnv.is_second_part_of_round(self.total_started_step_count, self.num_agents)
+        current_game_card: GameCard = self.board.game_cards[current_agent_id]
+        starting_points = current_game_card.get_points()
 
         if action is None:
             print("Agent chose no action ", current_agent_id)
@@ -187,14 +186,18 @@ class QwoxEnv(AECEnv):
             self.rewards = {agent: 0 for agent in self.agents}
             self._cumulative_rewards[self.agent_selection] = 0
             self.agent_selection = self._agent_selector.next()
-            self.total_started_step_count += 1
-            return
 
-        current_game_card: GameCard = self.board.game_cards[current_agent_id]
-        starting_points = current_game_card.get_points()
+            if self.total_started_step_count % (self.num_agents * 2) == 0:
+                self.board.roll_dices()
+
+            current_game_card.crossed_something_in_current_round = False
+            self.total_started_step_count += 1
+            self.current_round = QwoxEnv.get_round(self.total_started_step_count, self.num_agents)
+            return
 
         if action not in np.flatnonzero(self.observe(current_agent_id)["action_mask"]):
             raise Exception("Wrong action", action, self.observe(current_agent_id)["action_mask"].reshape(5, 11))
+
         # DO ACTION
         current_game_card.cross_value_with_flattened_action(action)
 
@@ -224,26 +227,24 @@ class QwoxEnv(AECEnv):
                                 "point_difference": learned_player_points -
                                                     opponent_player_points,
                                 "finish_reason": finish_reason,
-                                "winner": "learned_player" if learned_player_points > opponent_player_points else "opponent player" })
+                                "winner": "learned_player" if learned_player_points > opponent_player_points else "opponent player"})
 
         # Reset for next round
         if is_second_part_of_round:
             current_game_card.crossed_something_in_current_round = False
 
         self._cumulative_rewards[self.agent_selection] = 0
-        # selects the next agent.
+        # selects the next agent
         self.agent_selection = self._agent_selector.next()
 
-        # Check if next agent has to toss the dices and do it before the next agent takes its step, as the dice
-        # state need to be known by the agent that takes a step
-        # TODO make sure that dices are only changed once per round
-        next_agent_tossing_agent = self.get_tossing_agent_index(self.current_round) == self.agents.index(current_agent_id)
-
-        if next_agent_tossing_agent:
-            self.board.roll_dices()
         # Adds .rewards to ._cumulative_rewards
         self._accumulate_rewards()
+
+        if self.total_started_step_count % (self.num_agents * 2) == 0:
+            self.board.roll_dices()
+
         self.total_started_step_count += 1
+        self.current_round = QwoxEnv.get_round(self.total_started_step_count, self.num_agents)
 
     def get_tossing_agent_index(self, current_round):
         return (current_round - 1) % self.num_agents

@@ -13,3 +13,6 @@ class Dice:
 
     def __repr__(self):
         return f"{self.color}-Dice {self.current_value}"
+
+    def __eq__(self, other):
+        return self.color.value == other.color.value and self.current_value == other.current_value
