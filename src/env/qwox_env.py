@@ -257,7 +257,7 @@ class QwoxEnv(AECEnv):
                             "point_difference": learned_player_points -
                                                 opponent_player_points,
                             "finish_reason": finish_reason,
-                            "winner": "learned_player" if learned_player_points > opponent_player_points else "opponent player"})
+                            "winner": "1" if learned_player_points > opponent_player_points else "0"})
 
     def set_state_for_next_step(self, current_game_card, is_second_part_of_round):
         # Reset for next round

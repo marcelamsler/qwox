@@ -17,19 +17,20 @@ def get_trained_agent(env):
     net = Net(
         state_shape=env.observation_spaces[env.agents[0]]["observation"].shape,
         action_shape=env.observation_spaces[env.agents[0]]["action_mask"].shape,
-        hidden_sizes=[128, 128, 128, 128, 128, 128],
+        hidden_sizes=[256, 256, 256, 256, 256, 256],
         device="cuda" if torch.cuda.is_available() else "cpu",
     ).to("cuda" if torch.cuda.is_available() else "cpu")
 
-    optim = torch.optim.Adam(net.parameters(), lr=1e-4)
+    optim = torch.optim.Adam(net.parameters(), lr=1e-5)
 
     agent_learn = DQNPolicy(
         model=net,
         optim=optim,
-        discount_factor=0.9,
-        estimation_step=10,
-        target_update_freq=320,
+        discount_factor=0.99,
+        estimation_step=1,
+        target_update_freq=500
     )
+
 
     return agent_learn
 
@@ -38,7 +39,7 @@ if __name__ == "__main__":
     env = wrapped_quox_env()
     env.reset()
 
-    path = os.path.join("policy-72.pth")
+    path = os.path.join("policy-89.pth")
     trained_agent = get_trained_agent(env)
     trained_agent.load_state_dict(torch.load(path))
 

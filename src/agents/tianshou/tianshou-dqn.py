@@ -8,7 +8,7 @@ import torch
 from tianshou.data import Collector, VectorReplayBuffer, PrioritizedVectorReplayBuffer
 from tianshou.env import DummyVectorEnv
 from tianshou.env.pettingzoo_env import PettingZooEnv
-from tianshou.policy import BasePolicy, DQNPolicy, MultiAgentPolicyManager, RandomPolicy
+from tianshou.policy import BasePolicy, DQNPolicy, MultiAgentPolicyManager, RandomPolicy, RainbowPolicy
 from tianshou.trainer import offpolicy_trainer
 from tianshou.utils import WandbLogger
 from tianshou.utils.net.common import Net
@@ -36,18 +36,18 @@ def _get_agents(
         net = Net(
             state_shape=observation_space.shape or observation_space.n,
             action_shape=env.action_space.shape or env.action_space.n,
-            hidden_sizes=[128, 128, 128, 128, 128, 128],
+            hidden_sizes=[256, 256, 256, 256, 256, 256],
             device="cuda" if torch.cuda.is_available() else "cpu",
         ).to("cuda" if torch.cuda.is_available() else "cpu")
         if optim is None:
-            optim = torch.optim.Adam(net.parameters(), lr=1e-4)
+            optim = torch.optim.Adam(net.parameters(), lr=1e-5)
 
         agent_learn = DQNPolicy(
             model=net,
             optim=optim,
-            discount_factor=0.9,
-            estimation_step=10,
-            target_update_freq=320,
+            discount_factor=0.99,
+            estimation_step=1,
+            target_update_freq=500
         )
 
         wandb.watch(net)
@@ -88,8 +88,8 @@ if __name__ == "__main__":
     test_envs.seed(seed)
 
     # ======== Step 2: Agent setup =========
-    path = os.path.join("log", "rps", "dqn", "policy-56.pth")
-    policy, optim, agents = _get_agents(logger.wandb_run, agent_opponent=LongPlayingPolicy())
+    path = os.path.join("log", "rps", "dqn", "policy-89.pth")
+    policy, optim, agents = _get_agents(logger.wandb_run, opponent_path=path)
 
 
     # ======== Step 3: Collector setup =========
@@ -97,7 +97,7 @@ if __name__ == "__main__":
         policy,
         train_envs,
         PrioritizedVectorReplayBuffer(20_000, len(train_envs), alpha=0.001, beta=0.001),
-        exploration_noise=True,
+        exploration_noise=False,
     )
     test_collector = Collector(policy, test_envs, exploration_noise=True)
     # policy.set_eps(1)
@@ -137,7 +137,7 @@ if __name__ == "__main__":
         policy=policy,
         train_collector=train_collector,
         test_collector=test_collector,
-        max_epoch=100,
+        max_epoch=1000,
         step_per_epoch=1000,
         step_per_collect=100,
         episode_per_test=20,
