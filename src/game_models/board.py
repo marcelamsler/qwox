@@ -20,7 +20,7 @@ class Board:
         for dice in self.dices:
             dice.roll()
 
-    def game_is_finished(self):
+    def is_game_finished(self):
         for card in self.game_cards.values():
             if card.get_pass_count() == 4:
                 return True
@@ -47,11 +47,11 @@ class Board:
 
         return action_mask_from_card
 
-    def get_observation_for_agent(self, player_id: str, is_tossing_player: bool,
-                                  is_second_part_of_round: bool) -> np.ndarray:
+    def get_observation(self, player_id: str, is_tossing_player: bool,
+                        is_second_part_of_round: bool) -> np.ndarray:
         """
         This returns the board observation for an agent. Board observation includes the game-cards of the other players
-        as well as the dice values and round part. The shape is (player_count + 1, 5,12). 5,12 is on game-card state,
+        as well as the dice values and round part. The shape is (player_count + 1, 5,12). 5,12 is one game-card state,
         whereas the first axis represent the other players cards (plus one for dice values and state-information). The last channel represents the dice values.
         Important is that each player sees its own card on index 0 and the other ones after that.
         :param is_second_part_of_round: is it second part where coloured dices come into action?

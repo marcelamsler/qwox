@@ -32,7 +32,7 @@ class BoardTest(unittest.TestCase):
         card.cross_value_with_flattened_action(10)
         card.cross_value_with_flattened_action(21)
 
-        self.assertEqual(board.game_is_finished(), True)
+        self.assertEqual(board.is_game_finished(), True)
 
     def test_game_finished_with_passes(self):
         players = ["player1", "player2"]
@@ -45,7 +45,7 @@ class BoardTest(unittest.TestCase):
         card.cross_value_with_flattened_action(46)
         card.cross_value_with_flattened_action(47)
 
-        self.assertEqual(board.game_is_finished(), True)
+        self.assertEqual(board.is_game_finished(), True)
 
     def test_game_finished_with_rows_closed_for_different_players(self):
         players = ["player1", "player2"]
@@ -60,7 +60,7 @@ class BoardTest(unittest.TestCase):
         player1_card.cross_value_with_flattened_action(10)
         player2_card.cross_value_with_flattened_action(21)
 
-        self.assertEqual(board.game_is_finished(), True)
+        self.assertEqual(board.is_game_finished(), True)
 
     def test_row_closing_for_others(self):
         players = ["player1", "player2"]
@@ -116,8 +116,8 @@ class BoardTest(unittest.TestCase):
                                                          expected_player2_card_observation,
                                                          expected_dice_observation]
 
-        observation_player1_perspective = board.get_observation_for_agent(players[0], is_second_part_of_round=True,
-                                                                          is_tossing_player=True)
+        observation_player1_perspective = board.get_observation(players[0], is_second_part_of_round=True,
+                                                                is_tossing_player=True)
 
         assert_array_equal(expected_observation_from_player1_perspective[0], observation_player1_perspective[0])
         assert_array_equal(expected_observation_from_player1_perspective[1], observation_player1_perspective[1])

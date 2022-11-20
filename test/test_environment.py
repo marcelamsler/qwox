@@ -67,7 +67,7 @@ class EnvironmentTest(unittest.TestCase):
             env.render()
             env.step(action)
 
-            if env.unwrapped.board.game_is_finished():
+            if env.unwrapped.board.is_game_finished():
                 return
 
     def test_get_round(self):

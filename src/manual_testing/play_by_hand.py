@@ -66,6 +66,6 @@ if __name__ == "__main__":
 
         env.step(action)
 
-        if env.unwrapped.board.game_is_finished():
+        if env.unwrapped.board.is_game_finished():
             print("game finished")
             break

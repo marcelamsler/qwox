@@ -36,7 +36,7 @@ def _get_agents(
         net = Net(
             state_shape=observation_space.shape or observation_space.n,
             action_shape=env.action_space.shape or env.action_space.n,
-            hidden_sizes=[256, 256, 256, 256, 256, 256],
+            hidden_sizes=[128, 128, 128, 128, 128, 128],
             device="cuda" if torch.cuda.is_available() else "cpu",
         ).to("cuda" if torch.cuda.is_available() else "cpu")
         if optim is None:
@@ -89,18 +89,19 @@ if __name__ == "__main__":
 
     # ======== Step 2: Agent setup =========
     path = os.path.join("log", "rps", "dqn", "policy-89.pth")
-    policy, optim, agents = _get_agents(logger.wandb_run, opponent_path=path)
+    policy, optim, agents = _get_agents(logger.wandb_run, agent_opponent=LongPlayingPolicy())
 
 
     # ======== Step 3: Collector setup =========
     train_collector = Collector(
         policy,
         train_envs,
-        PrioritizedVectorReplayBuffer(20_000, len(train_envs), alpha=0.001, beta=0.001),
-        exploration_noise=False,
+        VectorReplayBuffer(20_000, len(train_envs), alpha=0.001, beta=0.001),
+        #PrioritizedVectorReplayBuffer(20_000, len(train_envs), alpha=0.001, beta=0.001),
+        exploration_noise=True,
     )
-    test_collector = Collector(policy, test_envs, exploration_noise=True)
-    # policy.set_eps(1)
+    test_collector = Collector(policy, test_envs, exploration_noise=False)
+
     train_collector.collect(n_step=64 * 10)  # batch size * training_num
 
 
@@ -118,11 +119,11 @@ if __name__ == "__main__":
 
 
     def train_fn(epoch, env_step):
-        policy.policies[agents[1]].set_eps(0.1)
+        policy.policies[agents[1]].set_eps(0.5)
 
 
     def test_fn(epoch, env_step):
-        policy.policies[agents[1]].set_eps(0.05)
+        policy.policies[agents[1]].set_eps(0)
 
 
     def reward_metric(rews):

@@ -149,9 +149,9 @@ class QwoxEnv(AECEnv):
         """
         is_tossing_agent = self.get_tossing_agent_index(self.current_round) == self.agents.index(agent)
         is_second_part_of_round = QwoxEnv.is_second_part_of_round(self.total_started_step_count, self.num_agents)
-        return {"observation": self.board.get_observation_for_agent(player_id=agent,
-                                                                    is_tossing_player=is_tossing_agent,
-                                                                    is_second_part_of_round=is_second_part_of_round),
+        return {"observation": self.board.get_observation(player_id=agent,
+                                                          is_tossing_player=is_tossing_agent,
+                                                          is_second_part_of_round=is_second_part_of_round),
                 "action_mask": self.board.get_allowed_actions_mask(agent,
                                                                    is_tossing_player=is_tossing_agent,
                                                                    is_second_part_of_round=is_second_part_of_round).flatten()}
@@ -232,8 +232,8 @@ class QwoxEnv(AECEnv):
                 else:
                     self.rewards[agent] = 0
 
-            self.dones = {agent: self.board.game_is_finished() for agent in self.agents}
-            if self.board.game_is_finished():
+            self.dones = {agent: self.board.is_game_finished() for agent in self.agents}
+            if self.board.is_game_finished():
                 learned_player_points = self.board.game_cards[self.agents[1]].get_points()
                 opponent_player_points = self.board.game_cards[self.agents[0]].get_points()
                 print("----------------------- > Total Rewards: Random Player:",
@@ -257,7 +257,7 @@ class QwoxEnv(AECEnv):
                             "point_difference": learned_player_points -
                                                 opponent_player_points,
                             "finish_reason": finish_reason,
-                            "winner": "1" if learned_player_points > opponent_player_points else "0"})
+                            "agent1_winning": (1 if learned_player_points > opponent_player_points else 0)})
 
     def set_state_for_next_step(self, current_game_card, is_second_part_of_round):
         # Reset for next round
