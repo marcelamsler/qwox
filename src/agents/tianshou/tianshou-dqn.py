@@ -14,7 +14,6 @@ from tianshou.utils import WandbLogger
 from tianshou.utils.net.common import Net
 from torch.utils.tensorboard import SummaryWriter
 
-from agents.tianshou.long_playing_policy import LongPlayingPolicy
 from agents.tianshou.lowest_value_taker_policy import LowestValueTakerPolicy
 from env.wrapped_quox_env import wrapped_quox_env
 
@@ -88,8 +87,8 @@ if __name__ == "__main__":
     test_envs.seed(seed)
 
     # ======== Step 2: Agent setup =========
-    path = os.path.join("log", "rps", "dqn", "policy-89.pth")
-    policy, optim, agents = _get_agents(logger.wandb_run, agent_opponent=LongPlayingPolicy())
+    path = os.path.join("log", "rps", "dqn", "policy-100.pth")
+    policy, optim, agents = _get_agents(logger.wandb_run, agent_opponent=LowestValueTakerPolicy())
 
 
     # ======== Step 3: Collector setup =========
@@ -119,7 +118,7 @@ if __name__ == "__main__":
 
 
     def train_fn(epoch, env_step):
-        policy.policies[agents[1]].set_eps(0.5)
+        policy.policies[agents[1]].set_eps(0.1)
 
 
     def test_fn(epoch, env_step):
@@ -138,7 +137,7 @@ if __name__ == "__main__":
         policy=policy,
         train_collector=train_collector,
         test_collector=test_collector,
-        max_epoch=1000,
+        max_epoch=750,
         step_per_epoch=1000,
         step_per_collect=100,
         episode_per_test=20,

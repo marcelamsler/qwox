@@ -17,7 +17,7 @@ def get_trained_agent(env):
     net = Net(
         state_shape=env.observation_spaces[env.agents[0]]["observation"].shape,
         action_shape=env.observation_spaces[env.agents[0]]["action_mask"].shape,
-        hidden_sizes=[256, 256, 256, 256, 256, 256],
+        hidden_sizes=[128, 128, 128, 128, 128, 128],
         device="cuda" if torch.cuda.is_available() else "cpu",
     ).to("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -39,7 +39,7 @@ if __name__ == "__main__":
     env = wrapped_quox_env()
     env.reset()
 
-    path = os.path.join("policy-89.pth")
+    path = os.path.join("policy-103.pth")
     trained_agent = get_trained_agent(env)
     trained_agent.load_state_dict(torch.load(path))
 

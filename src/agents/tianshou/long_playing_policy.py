@@ -34,7 +34,7 @@ class LongPlayingPolicy(BasePolicy):
             Please refer to :meth:`~tianshou.policy.BasePolicy.forward` for
             more detailed explanation.
         """
-        mask = batch.obs.mask
+        mask = np.array(batch.obs.mask, dtype=bool)
         logits = np.ones(mask.shape)
         logits[~mask] = 0
         array_of_chosen_indexes = np.argmax(logits > 0, axis=-1)

@@ -11,6 +11,13 @@ Indexes:
 ```
 # Local installation
 
-`conda env update --name ml4se --file environment.yml --prune`
+`conda env update --file environment.yml --prune`
 
 `brew install cmake openmpi`
+
+
+# Manual Playing
+
+`python3 src/manual_testing/play_by_hand.py`
+
+Then put in the index you want to choose and press Enter

@@ -1,3 +1,4 @@
+import datetime
 import functools
 import logging
 from typing import Optional
@@ -83,7 +84,8 @@ class QwoxEnv(AECEnv):
               self.board.get_closed_row_indexes())
         print("\n")
         for agent in self.agents:
-            print(agent, "| Passes used", self.board.game_cards[agent].get_pass_count(), "| Current Points:", self.board.game_cards[agent].get_points(), end="                        ")
+            print(agent, "| Passes used", self.board.game_cards[agent].get_pass_count(), "| Current Points:",
+                  self.board.game_cards[agent].get_points(), end="                        ")
         print("")
         for agent in self.agents:
             observation = self.get_observation(agent)
@@ -186,7 +188,6 @@ class QwoxEnv(AECEnv):
         self.infos = {agent: {} for agent in self.agents}
         self.total_started_step_count = 1
         self.agent_selection = self.agents[0]
-
         self._agent_selector.reset()
 
     def step(self, action):
@@ -241,23 +242,35 @@ class QwoxEnv(AECEnv):
                       "Learned Player: ", learned_player_points)
 
                 self.render()
-                self.log_to_wandb_if_possible(learned_player_points, opponent_player_points)
+                self.log_to_wandb_if_possible_or_file(learned_player_points, opponent_player_points)
 
         self.set_state_for_next_step(current_game_card, is_second_part_of_round)
 
-    def log_to_wandb_if_possible(self, learned_player_points, opponent_player_points):
+    def log_to_wandb_if_possible_or_file(self, learned_player_points, opponent_player_points):
+        are_closed_rows_reason_for_finish = len(self.board.get_closed_row_indexes()) >= 2
+        finish_reason = 1 if are_closed_rows_reason_for_finish else 0
         if self.wandb:
-            are_closed_rows_reason_for_finish = len(self.board.get_closed_row_indexes()) >= 2
-            finish_reason = 1 if are_closed_rows_reason_for_finish else 0
+
             self.wandb.log({"player_1_points": opponent_player_points,
                             "player_2_points": learned_player_points,
                             "player_1_passes": self.board.game_cards[self.agents[0]].get_pass_count(),
                             "player_2_passes": self.board.game_cards[self.agents[1]].get_pass_count(),
                             "closed_rows": len(self.board.get_closed_row_indexes()),
-                            "point_difference": learned_player_points -
-                                                opponent_player_points,
+                            "point_difference": learned_player_points - opponent_player_points,
                             "finish_reason": finish_reason,
                             "agent1_winning": (1 if learned_player_points > opponent_player_points else 0)})
+        else:
+            with open('test-log.csv', 'a') as f:
+
+                f.write(
+                    "\n"
+                    f"{datetime.datetime.now().now().strftime('%Y-%m-%d %H:%M:%S')},"
+                    f"{opponent_player_points}, "
+                    f"{learned_player_points}, "
+                    f"{self.board.game_cards[self.agents[0]].get_pass_count()}, "
+                    f"{self.board.game_cards[self.agents[1]].get_pass_count()}, "
+                    f"{len(self.board.get_closed_row_indexes())}, "
+                    f"{finish_reason}")
 
     def set_state_for_next_step(self, current_game_card, is_second_part_of_round):
         # Reset for next round
