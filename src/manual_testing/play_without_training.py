@@ -1,10 +1,8 @@
 import torch
 from tianshou.policy import RandomPolicy
 
-from agents.tianshou.long_playing_policy import LongPlayingPolicy
 from env.wrapped_quox_env import wrapped_quox_env
-from manual_testing.utils import get_trained_agent, create_batch_from_observation, \
-    create_batch_from_observation_for_handmade_policy
+from manual_testing.utils import get_trained_agent, create_batch_from_observation
 
 if __name__ == "__main__":
     env = wrapped_quox_env()

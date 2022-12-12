@@ -25,7 +25,7 @@ def get_trained_agent(env, policy_number: int):
         target_update_freq=500
     )
 
-    path = os.path.join(f"policy-{policy_number}.pth")
+    path = os.path.join(f"trained-agents/policy-{policy_number}.pth")
     trained_agent = agent
     trained_agent.load_state_dict(torch.load(path))
 
