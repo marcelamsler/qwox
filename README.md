@@ -1,8 +1,41 @@
-# Pettingzoo Environment for Qwox
-This is a Pettingszoo Environment for the dice game Qwox :-)
+# Reinforcement-Learning-Agent for Qwox
 
-#Environment documentation
+This repository contains a Pettingzoo Environment for the dice Game "Qwox" :-) as well as multiple trained and algorithmic Agents
+for this Environment.
 
+## Local installation
+
+`conda env update --file environment.yml --prune`
+
+`brew install cmake openmpi`
+
+
+## Manual Playing
+
+`python3 src/manual_testing/play_by_hand.py`
+
+Then put in the index you want to choose and press Enter.
+
+It is also possible to change the agent you want to play against. By changing the number in `get_trained_agent(env, 103)`
+There are  alot of pretrained agents available. The most important ones are:
+
+* 103 Best Performing Agent, which is the 3rd Generation of trained Agents against other DQN based agents
+* 107 1st Generation of a trained Agent
+* 106 Agent which was trained with a limited Observation Space (only its own Card)
+
+Also other Agents that use an Algorithmic Implementation are available with RandomPolicy(), LongPlayingPolicy() and LowestValueTaker()
+
+## Run Evaluations against other Agents
+
+`python3 src/manual_testing/play_without_training.py` 
+
+Lets you run battles between different Agents of your choice. The results are the automatically saved into test-log.csv
+The Agents can be set the same ways as in `Manual Playing` above
+
+
+## Environment Documentation
+
+This is a Pettingszoo Environment for the dice game Qwox 
 
 | Attribute          | Description                        |
 |--------------------|------------------------------------|
@@ -64,34 +97,5 @@ This can be calculated by doing 1+2+3, if the user has 3 numbers crossed
 
 Any used pass gives a reward of -5
 
-
-# Local installation
-
-`conda env update --file environment.yml --prune`
-
-`brew install cmake openmpi`
-
-
-# Manual Playing
-
-`python3 src/manual_testing/play_by_hand.py`
-
-Then put in the index you want to choose and press Enter.
-
-It is also possible to change the agent you want to play against. By changing the number in `get_trained_agent(env, 103)`
-There are  alot of pretrained agents available. The most important ones are:
-
-* 103 Best Performing Agent, which is the 3rd Generation of trained Agents against other DQN based agents
-* 107 1st Generation of a trained Agent
-* 106 Agent which was trained with a limited Observation Space (only its own Card)
-
-Also other Agents that use an Algorithmic Implementation are available with RandomPolicy(), LongPlayingPolicy() and LowestValueTaker()
-
-# Run Evaluations against other Agents
-
-`python3 src/manual_testing/play_without_training.py` 
-
-Lets you run battles between different Agents of your choice. The results are the automatically saved into test-log.csv
-The Agents can be set the same ways as in `Manual Playing` above
 
 

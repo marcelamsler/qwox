@@ -4,9 +4,9 @@ import numpy as np
 from numpy import int8
 from numpy.testing import assert_array_equal
 
+from game_models.board import Board
 from game_models.color import Color
 from game_models.game_card import GameCard
-from src.game_models.board import Board
 from utils import get_dices_with_value
 
 
