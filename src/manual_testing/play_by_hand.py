@@ -1,10 +1,4 @@
-import os
-
 import numpy as np
-import torch
-from tianshou.data import Batch
-from tianshou.policy import DQNPolicy
-from tianshou.utils.net.common import Net
 
 from env.wrapped_quox_env import wrapped_quox_env
 from manual_testing.utils import get_trained_agent, create_batch_from_observation

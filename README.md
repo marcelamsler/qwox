@@ -9,10 +9,13 @@ for this Environment.
 
 `brew install cmake openmpi`
 
+## Run Tests
+
+`export PYTHONPATH="${PYTHONPATH}:$(pwd)/src" && python -m unittest discover test`
 
 ## Manual Playing
 
-`python3 src/manual_testing/play_by_hand.py`
+`export PYTHONPATH="${PYTHONPATH}:$(pwd)/src" && python3 src/manual_testing/play_by_hand.py`
 
 Then put in the index you want to choose and press Enter.
 
@@ -27,11 +30,10 @@ Also other Agents that use an Algorithmic Implementation are available with Rand
 
 ## Run Evaluations against other Agents
 
-`python3 src/manual_testing/play_without_training.py` 
+`export PYTHONPATH="${PYTHONPATH}:$(pwd)/src" && python3 src/manual_testing/play_without_training.py` 
 
 Lets you run battles between different Agents of your choice. The results are the automatically saved into test-log.csv
 The Agents can be set the same ways as in `Manual Playing` above
-
 
 ## Environment Documentation
 
